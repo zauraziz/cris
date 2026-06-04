@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-export type KafedraStat = { name: string; count: number; works: number };
-export type FacultyStat = { name: string; count: number; works: number; kafedras: KafedraStat[] };
+export type KafedraStat = { name: string; count: number; works: number; citations: number };
+export type FacultyStat = { name: string; count: number; works: number; citations: number; kafedras: KafedraStat[] };
 
 export default function FacultyAccordion({ faculties }: { faculties: FacultyStat[] }) {
   const [open, setOpen] = useState<Record<number, boolean>>({ 0: true });
@@ -27,6 +27,7 @@ export default function FacultyAccordion({ faculties }: { faculties: FacultyStat
                 <div className="fac-stats">
                   <div className="fac-stat"><div className="n">{fac.count}</div><div className="l">tədqiqatçı</div></div>
                   <div className="fac-stat"><div className="n">{fac.works}</div><div className="l">publikasiya</div></div>
+                  <div className="fac-stat"><div className="n">{fac.citations}</div><div className="l">sitat</div></div>
                   <svg className={"fac-chev" + (isOpen ? " open" : "")} viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 9l6 6 6-6"/></svg>
                 </div>
               </div>
@@ -40,7 +41,7 @@ export default function FacultyAccordion({ faculties }: { faculties: FacultyStat
                         <div className="kn2">{kaf.name}</div>
                         <div className="kaf-bar-wrap">
                           <div className="kaf-track"><div className="kaf-fill" style={{ width: pct + "%" }} /></div>
-                          <div className="kaf-val">{kaf.works} pub · {kaf.count} nəfər</div>
+                          <div className="kaf-val">{kaf.works} pub · {kaf.citations} sitat · {kaf.count} nəfər</div>
                         </div>
                       </div>
                     );

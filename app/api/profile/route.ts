@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSql } from "@/lib/db";
+import { getSql, ensureSchema } from "@/lib/db";
 import { isValidAddaEmail, ADDA_STRUCTURE } from "@/lib/adda";
 
 export const dynamic = "force-dynamic";
@@ -41,22 +41,31 @@ export async function POST(req: NextRequest) {
   const orcid = body.orcid ? String(body.orcid).toUpperCase().trim() : null;
   const orcidName = body.orcid_name ? String(body.orcid_name).trim() : null;
   const works = Number.isFinite(body.works_count) ? Number(body.works_count) : 0;
+  const citations = Number.isFinite(body.citations) ? Number(body.citations) : 0;
+  const hIndex = Number.isFinite(body.h_index) ? Number(body.h_index) : 0;
+  const i10 = Number.isFinite(body.i10_index) ? Number(body.i10_index) : 0;
+  const openalexId = body.openalex_id ? String(body.openalex_id).trim() : null;
   const scholar = body.scholar_id ? String(body.scholar_id).trim() : null;
   const rg = body.researchgate ? String(body.researchgate).trim() : null;
   const position = body.position_title ? String(body.position_title).trim() : null;
 
   try {
+    await ensureSchema();
     const sql = getSql();
     await sql`
       INSERT INTO researchers
-        (email, full_name, orcid, orcid_name, works_count, scholar_id, researchgate, faculty, kafedra, position_title, updated_at)
+        (email, full_name, orcid, orcid_name, openalex_id, works_count, citations, h_index, i10_index, scholar_id, researchgate, faculty, kafedra, position_title, updated_at)
       VALUES
-        (${email}, ${fullName}, ${orcid}, ${orcidName}, ${works}, ${scholar}, ${rg}, ${faculty}, ${kafedra}, ${position}, now())
+        (${email}, ${fullName}, ${orcid}, ${orcidName}, ${openalexId}, ${works}, ${citations}, ${hIndex}, ${i10}, ${scholar}, ${rg}, ${faculty}, ${kafedra}, ${position}, now())
       ON CONFLICT (email) DO UPDATE SET
         full_name      = EXCLUDED.full_name,
         orcid          = EXCLUDED.orcid,
         orcid_name     = EXCLUDED.orcid_name,
+        openalex_id    = EXCLUDED.openalex_id,
         works_count    = EXCLUDED.works_count,
+        citations      = EXCLUDED.citations,
+        h_index        = EXCLUDED.h_index,
+        i10_index      = EXCLUDED.i10_index,
         scholar_id     = EXCLUDED.scholar_id,
         researchgate   = EXCLUDED.researchgate,
         faculty        = EXCLUDED.faculty,
@@ -66,6 +75,8 @@ export async function POST(req: NextRequest) {
     `;
     return NextResponse.json({ ok: true });
   } catch (err: any) {
+    // Vercel runtime log-larında görünsün ki, diaqnostika asan olsun
+    console.error("[/api/profile] INSERT xətası:", err?.message, err);
     return NextResponse.json(
       { ok: false, error: "db", message: err?.message || "Baza xətası." },
       { status: 500 }

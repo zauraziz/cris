@@ -6,7 +6,9 @@ import { ADDA_STRUCTURE, POSITIONS, EMAIL_DOMAINS, isValidAddaEmail } from "@/li
 
 type Screen = "login" | "hub" | "entry" | "confirm";
 type Vstatus = { type: "ok" | "warn" | "err" | "loading"; msg: string } | null;
-type Verified = { id: string; name?: string; works?: number; url?: string } | null;
+type Verified = { id: string; url?: string } | null;
+type OpenAlexStats = { found: boolean; openalexId: string | null; worksCount: number; citations: number; hIndex: number; i10Index: number; name: string | null };
+type OrcidVerified = { id: string; name: string; works: number; openalex: OpenAlexStats } | null;
 
 const FACULTIES = Object.keys(ADDA_STRUCTURE);
 const PRIMARY_DOMAIN = EMAIL_DOMAINS[0] || "adda.edu.az";
@@ -27,7 +29,7 @@ export default function Wizard() {
   const [rgInput, setRgInput] = useState("");
 
   // verification
-  const [vOrcid, setVOrcid] = useState<Verified>(null);
+  const [vOrcid, setVOrcid] = useState<OrcidVerified>(null);
   const [vScholar, setVScholar] = useState<Verified>(null);
   const [vRg, setVRg] = useState<Verified>(null);
   const [sOrcid, setSOrcid] = useState<Vstatus>(null);
@@ -93,14 +95,25 @@ export default function Wizard() {
       setSOrcid({ type: "err", msg: "Format yanlışdır. Düzgün format: 0000-0000-0000-0000" });
       return;
     }
-    setSOrcid({ type: "loading", msg: "Beynəlxalq ORCID bazasında yoxlanılır..." });
+    setSOrcid({ type: "loading", msg: "ORCID və OpenAlex bazalarında yoxlanılır..." });
     setOrcidLoading(true);
     try {
       const r = await fetch(`/api/verify-orcid?id=${id}`);
       const d = await r.json();
       if (!d.ok) throw new Error(d.message || "tapılmadı");
-      setVOrcid({ id, name: d.name, works: d.works });
-      setSOrcid({ type: "ok", msg: `Təsdiqləndi: ${d.name} · ${d.works} əsər tapıldı` });
+      const oa: OpenAlexStats = d.openalex || { found: false, openalexId: null, worksCount: 0, citations: 0, hIndex: 0, i10Index: 0, name: null };
+      setVOrcid({ id, name: d.name, works: d.works, openalex: oa });
+      if (oa.found) {
+        setSOrcid({
+          type: "ok",
+          msg: `Təsdiqləndi: ${d.name} · OpenAlex: ${oa.worksCount} əsər · h-indeks ${oa.hIndex} · ${oa.citations} sitat`,
+        });
+      } else {
+        setSOrcid({
+          type: "ok",
+          msg: `Təsdiqləndi: ${d.name} · OpenAlex-də profil tapılmadı (yeni ORCID ola bilər — publikasiyalar yığılandan sonra görünəcək)`,
+        });
+      }
     } catch (err: any) {
       setVOrcid(null);
       setSOrcid({ type: "err", msg: "Bu ORCID iD beynəlxalq bazada tapılmadı. Nömrəni yoxlayın." });
@@ -149,7 +162,11 @@ export default function Wizard() {
           full_name: fullname.trim(),
           orcid: vOrcid?.id || null,
           orcid_name: vOrcid?.name || null,
-          works_count: vOrcid?.works || 0,
+          openalex_id: vOrcid?.openalex?.openalexId || null,
+          works_count: vOrcid?.openalex?.found ? vOrcid.openalex.worksCount : (vOrcid?.works || 0),
+          citations: vOrcid?.openalex?.citations || 0,
+          h_index: vOrcid?.openalex?.hIndex || 0,
+          i10_index: vOrcid?.openalex?.i10Index || 0,
           scholar_id: vScholar?.id || null,
           researchgate: vRg?.id || null,
           faculty, kafedra, position_title: position,
@@ -386,7 +403,16 @@ export default function Wizard() {
               <div className="card-pad">
                 <ConfRow k="Ad, soyad" v={fullname} />
                 <ConfRow k="E-poçt" v={email} />
-                <ConfRow k="ORCID iD" v={`${vOrcid?.id} · ${vOrcid?.works} əsər`} pill="ok" />
+                <ConfRow k="ORCID iD" v={vOrcid?.id || ""} pill="ok" />
+                {vOrcid?.openalex?.found ? (
+                  <>
+                    <ConfRow k="Publikasiya (OpenAlex)" v={String(vOrcid.openalex.worksCount)} pill="ok" />
+                    <ConfRow k="h-indeks" v={String(vOrcid.openalex.hIndex)} pill="ok" />
+                    <ConfRow k="Sitat sayı" v={String(vOrcid.openalex.citations)} pill="ok" />
+                  </>
+                ) : (
+                  <ConfRow k="OpenAlex" v="Profil tapılmadı (publikasiya 0)" pill="warn" />
+                )}
                 <ConfRow k="Google Scholar" v={vScholar ? vScholar.id : "Daxil edilməyib"} pill={vScholar ? "warn" : "none"} />
                 <ConfRow k="ResearchGate" v={vRg ? vRg.id : "Daxil edilməyib"} pill={vRg ? "warn" : "none"} />
                 <ConfRow k="Fakültə" v={faculty} />
@@ -394,7 +420,7 @@ export default function Wizard() {
                 <ConfRow k="Vəzifə" v={position} />
                 <div className="cf-meta">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                  <span>Təsdiqlədikdən sonra publikasiyalarınız OpenAlex və Crossref bazalarından avtomatik toplanacaq. Məlumatları sonradan yeniləyə bilərsiniz.</span>
+                  <span>Publikasiya, sitat və h-indeks göstəriciləriniz OpenAlex açıq bazasından avtomatik alındı. Məlumatları sonradan yeniləyə bilərsiniz.</span>
                 </div>
                 <div className="form-actions">
                   <button className="btn btn-back" onClick={() => setScreen("entry")} style={{ flex: 0.5 }} disabled={saving}>Düzəliş et</button>

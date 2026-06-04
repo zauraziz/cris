@@ -1,29 +1,20 @@
 // ============================================================
-//  ADDA strukturu — NÜMUNƏ məlumatlardır.
-//  Real fakültə/kafedra adları ilə əvəz edin.
-//  Bu faylı dəyişmək kifayətdir; qalan kod avtomatik uyğunlaşır.
+//  ADDA strukturu — real fakültə və kafedra adları.
+//  Dəyişmək üçün yalnız bu obyekti redaktə edin; qalan kod
+//  (forma, validasiya, dashboard) avtomatik uyğunlaşır.
 // ============================================================
 
 export const ADDA_STRUCTURE: Record<string, string[]> = {
-  "Dəniz Naviqasiyası fakültəsi": [
-    "Gəmi naviqasiyası kafedrası",
-    "Gəmilərin idarə olunması kafedrası",
-    "Dəniz təhlükəsizliyi və mühafizəsi kafedrası",
+  "Gəmi Sürücülüyü fakültəsi": [
+    "Dəniz naviqasiyası",
+    "Gəmiqayırma və gəmi təmiri",
+    "Humanitar fənnlər",
+    "İngilis dili",
   ],
-  "Gəmi Energetika fakültəsi": [
-    "Gəmi energetik qurğuları kafedrası",
-    "Gəmi elektrik avadanlığı və avtomatika kafedrası",
-    "Soyuducu və ventilyasiya qurğuları kafedrası",
-  ],
-  "Hidrotexnika və Liman fakültəsi": [
-    "Liman və terminal qurğuları kafedrası",
-    "Hidrotexniki qurğular kafedrası",
-    "Logistika və dəniz nəqliyyatı kafedrası",
-  ],
-  "Humanitar fakültə": [
-    "Xarici dillər kafedrası",
-    "İctimai fənlər kafedrası",
-    "Riyaziyyat və təbiət elmləri kafedrası",
+  "Gəmi Mexanikası və Elektromexanikası fakültəsi": [
+    "Gəmi energetik qurğuları",
+    "Gəmi elektroavtomatikası",
+    "Tətbiqi mexanika",
   ],
 };
 

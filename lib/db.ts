@@ -2,8 +2,7 @@ import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 
 // Neon serverless HTTP driver — Vercel-də (serverless) optimal işləyir.
 // neon() boş bağlantı sətri ilə dərhal xəta atdığı üçün gec (lazy)
-// inicializasiya edirik — beləliklə xəta yalnız sorğu vaxtı (try/catch
-// daxilində) baş verir, import vaxtı deyil.
+// inicializasiya edirik — xəta yalnız sorğu vaxtı (try/catch daxilində) baş verir.
 
 let _sql: NeonQueryFunction<false, false> | null = null;
 
@@ -15,4 +14,41 @@ export function getSql(): NeonQueryFunction<false, false> {
     _sql = neon(process.env.DATABASE_URL);
   }
   return _sql;
+}
+
+// Cədvəlin mövcudluğunu təmin edir (idempotent).
+// Beləliklə deploy-dan sonra schema.sql-i əl ilə işlətmək unudulsa belə,
+// ilk yazıda/oxumada cədvəl avtomatik yaranır.
+let _schemaReady = false;
+
+export async function ensureSchema(): Promise<void> {
+  if (_schemaReady) return;
+  const sql = getSql();
+  await sql`
+    CREATE TABLE IF NOT EXISTS researchers (
+      id              SERIAL PRIMARY KEY,
+      email           TEXT UNIQUE NOT NULL,
+      full_name       TEXT NOT NULL,
+      orcid           TEXT,
+      orcid_name      TEXT,
+      openalex_id     TEXT,
+      works_count     INTEGER NOT NULL DEFAULT 0,
+      citations       INTEGER NOT NULL DEFAULT 0,
+      h_index         INTEGER NOT NULL DEFAULT 0,
+      i10_index       INTEGER NOT NULL DEFAULT 0,
+      scholar_id      TEXT,
+      researchgate    TEXT,
+      faculty         TEXT NOT NULL,
+      kafedra         TEXT NOT NULL,
+      position_title  TEXT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+  // Mövcud cədvəl üçün miqrasiya (OpenAlex sütunları) — idempotent
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS openalex_id TEXT`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS citations INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS h_index INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS i10_index INTEGER NOT NULL DEFAULT 0`;
+  _schemaReady = true;
 }

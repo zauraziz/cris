@@ -138,10 +138,23 @@ adda-portal/
 
 ## Növbəti addımlar (M1 planına uyğun)
 
+- ✅ **OpenAlex inteqrasiyası** (TAMAMLANDI): ORCID daxil edildikdə publikasiya sayı, sitatlar və h-indeks OpenAlex-dən avtomatik alınır.
 - **Autentifikasiya**: hazırda kimlik yalnız e-poçt + ad əsasındadır (parol yoxdur). İstehsalda **magic-link** e-poçt təsdiqi və ya korporativ SSO əlavə edilməlidir.
-- **OpenAlex inteqrasiyası**: publikasiyaların avtomatik toplanması, **h-indeks** və sitat analitikası (M1 planının A5–A7 addımları).
+- **Planlı yeniləmə (cron)**: göstəricilərin dövri (məs. həftəlik) avtomatik yenilənməsi — Vercel Cron + OpenAlex.
+- **Tədqiqatçı detal səhifəsi**: hər alimin publikasiya siyahısı, illik trend, kollaborasiya şəbəkəsi.
 - **Admin paneli**: məlumat keyfiyyəti nəzarəti, ixrac (Excel/PDF), kafedra müdirləri üçün təsdiq.
 - **Şəbəkəyə genişlənmə** (Mərhələ B): çoxqurumlu (multi-tenant) arxitektura.
+
+## Elmmetrik mənbələr
+
+| Göstərici | Mənbə | Qeyd |
+|---|---|---|
+| Kimlik (ad) | ORCID | `pub.orcid.org` |
+| Publikasiya sayı | OpenAlex | `works_count` |
+| Sitat sayı | OpenAlex | `cited_by_count` |
+| h-indeks, i10-indeks | OpenAlex | `summary_stats` (hazır gəlir) |
+
+Hamısı **pulsuz və açıq** API-lardır — lisenziya tələb etmir.
 
 ---
 

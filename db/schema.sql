@@ -8,7 +8,11 @@ CREATE TABLE IF NOT EXISTS researchers (
   full_name       TEXT NOT NULL,
   orcid           TEXT,
   orcid_name      TEXT,
+  openalex_id     TEXT,
   works_count     INTEGER NOT NULL DEFAULT 0,
+  citations       INTEGER NOT NULL DEFAULT 0,
+  h_index         INTEGER NOT NULL DEFAULT 0,
+  i10_index       INTEGER NOT NULL DEFAULT 0,
   scholar_id      TEXT,
   researchgate    TEXT,
   faculty         TEXT NOT NULL,
@@ -20,3 +24,9 @@ CREATE TABLE IF NOT EXISTS researchers (
 
 CREATE INDEX IF NOT EXISTS idx_researchers_faculty ON researchers (faculty);
 CREATE INDEX IF NOT EXISTS idx_researchers_kafedra ON researchers (kafedra);
+
+-- Mövcud cədvəl üçün miqrasiya (OpenAlex sütunları). Təkrar işlədilə bilər.
+ALTER TABLE researchers ADD COLUMN IF NOT EXISTS openalex_id TEXT;
+ALTER TABLE researchers ADD COLUMN IF NOT EXISTS citations  INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE researchers ADD COLUMN IF NOT EXISTS h_index    INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE researchers ADD COLUMN IF NOT EXISTS i10_index  INTEGER NOT NULL DEFAULT 0;
