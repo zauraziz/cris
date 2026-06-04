@@ -4,6 +4,22 @@ import { isValidAddaEmail, ADDA_STRUCTURE } from "@/lib/adda";
 
 export const dynamic = "force-dynamic";
 
+// GET /api/profile?email=... — mövcud profili gətirir (redaktə üçün)
+export async function GET(req: NextRequest) {
+  const email = (req.nextUrl.searchParams.get("email") || "").toLowerCase().trim();
+  if (!email) return NextResponse.json({ ok: false, found: false });
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    const rows = (await sql`SELECT * FROM researchers WHERE email = ${email} LIMIT 1`) as any[];
+    if (!rows.length) return NextResponse.json({ ok: true, found: false });
+    return NextResponse.json({ ok: true, found: true, profile: rows[0] });
+  } catch (err: any) {
+    console.error("[/api/profile GET] xəta:", err?.message);
+    return NextResponse.json({ ok: false, found: false, message: err?.message }, { status: 500 });
+  }
+}
+
 // POST /api/profile — tədqiqatçı profilini bazaya əlavə/yeniləyir (upsert).
 export async function POST(req: NextRequest) {
   let body: any;

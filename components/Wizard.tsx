@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ADDA_STRUCTURE, POSITIONS, EMAIL_DOMAINS, isValidAddaEmail } from "@/lib/adda";
 
-type Screen = "login" | "hub" | "entry" | "confirm";
+type Screen = "login" | "hub" | "entry" | "confirm" | "profile";
 type Vstatus = { type: "ok" | "warn" | "err" | "loading"; msg: string } | null;
 type Verified = { id: string; url?: string } | null;
 type OpenAlexStats = { found: boolean; openalexId: string | null; worksCount: number; citations: number; hIndex: number; i10Index: number; name: string | null };
@@ -48,6 +48,7 @@ export default function Wizard() {
   // toast + saving
   const [toast, setToast] = useState<{ msg: string; warn?: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [myProfile, setMyProfile] = useState<any>(null);
 
   function showToast(msg: string, warn = false) {
     setToast({ msg, warn });
@@ -59,18 +60,59 @@ export default function Wizard() {
     : "?";
 
   // ---------- LOGIN ----------
-  function doLogin() {
+  async function doLogin() {
     const e = email.trim().toLowerCase();
     const eok = isValidAddaEmail(e);
     const nok = fullname.trim().length >= 3;
     setEmailErr(!eok);
     setNameErr(!nok);
-    if (eok && nok) setScreen("hub");
+    if (eok && nok) await loadProfileAndEnter(e);
   }
-  function demoLogin() {
-    setEmail("numune.istifadeci@" + PRIMARY_DOMAIN);
+  async function demoLogin() {
+    const e = "numune.istifadeci@" + PRIMARY_DOMAIN;
+    setEmail(e);
     setFullname("Nümunə İstifadəçi");
-    setScreen("hub");
+    await loadProfileAndEnter(e);
+  }
+  // Mövcud profili yükləyir — varsa "Mənim profilim"ə, yoxsa "hub"a yönləndirir
+  async function loadProfileAndEnter(e: string) {
+    try {
+      const r = await fetch(`/api/profile?email=${encodeURIComponent(e)}`);
+      const d = await r.json();
+      if (d.found && d.profile) {
+        const p = d.profile;
+        if (p.full_name) setFullname(p.full_name);
+        setOrcidInput(p.orcid || "");
+        if (p.orcid) {
+          const hasOa = !!p.openalex_id || (p.works_count || 0) > 0 || (p.citations || 0) > 0 || (p.h_index || 0) > 0;
+          setVOrcid({
+            id: p.orcid,
+            name: p.orcid_name || p.full_name || "",
+            works: p.works_count || 0,
+            openalex: {
+              found: hasOa,
+              openalexId: p.openalex_id || null,
+              worksCount: p.works_count || 0,
+              citations: p.citations || 0,
+              hIndex: p.h_index || 0,
+              i10Index: p.i10_index || 0,
+              name: p.orcid_name || null,
+            },
+          });
+        }
+        if (p.scholar_id) { setScholarInput(p.scholar_id); setVScholar({ id: p.scholar_id, url: `https://scholar.google.com/citations?user=${p.scholar_id}` }); }
+        if (p.researchgate) { setRgInput(p.researchgate); setVRg({ id: p.researchgate, url: `https://www.researchgate.net/profile/${p.researchgate}` }); }
+        setFaculty(p.faculty || "");
+        setKafedra(p.kafedra || "");
+        setPosition(p.position_title || "");
+        setMyProfile(p);
+        setScreen("profile");
+      } else {
+        setScreen("hub");
+      }
+    } catch {
+      setScreen("hub");
+    }
   }
   function logout() {
     setScreen("login");
@@ -79,6 +121,7 @@ export default function Wizard() {
     setVOrcid(null); setVScholar(null); setVRg(null);
     setSOrcid(null); setSScholar(null); setSRg(null);
     setFaculty(""); setKafedra(""); setPosition("");
+    setMyProfile(null);
   }
 
   // ---------- ORCID format ----------
@@ -174,8 +217,24 @@ export default function Wizard() {
       });
       const d = await r.json();
       if (!d.ok) throw new Error(d.message || "xəta");
-      showToast("Profiliniz uğurla təsdiqləndi və bazaya əlavə olundu!");
-      setTimeout(() => router.push("/dashboard"), 800);
+      const saved = {
+        email: email.trim().toLowerCase(),
+        full_name: fullname.trim(),
+        orcid: vOrcid?.id || null,
+        orcid_name: vOrcid?.name || null,
+        openalex_id: vOrcid?.openalex?.openalexId || null,
+        works_count: vOrcid?.openalex?.found ? vOrcid.openalex.worksCount : (vOrcid?.works || 0),
+        citations: vOrcid?.openalex?.citations || 0,
+        h_index: vOrcid?.openalex?.hIndex || 0,
+        i10_index: vOrcid?.openalex?.i10Index || 0,
+        scholar_id: vScholar?.id || null,
+        researchgate: vRg?.id || null,
+        faculty, kafedra, position_title: position,
+      };
+      setMyProfile(saved);
+      setSaving(false);
+      showToast("Profiliniz uğurla yadda saxlanıldı!");
+      setTimeout(() => setScreen("profile"), 600);
     } catch (err: any) {
       showToast("Saxlama zamanı xəta: " + (err.message || "naməlum"), true);
       setSaving(false);
@@ -248,13 +307,50 @@ export default function Wizard() {
             <div className="brand-txt"><b>ADDA Elm Portalı</b><span>Elmmetrik Profil Sistemi</span></div>
           </div>
           <div className="topbar-spacer" />
-          <a className="btn-ghost" href="/dashboard">Analitika</a>
           <div className="user-chip"><div className="av">{initials}</div><span>{fullname}</span></div>
           <button className="btn-ghost" onClick={logout}>Çıxış</button>
         </div>
       </div>
 
       <div className="shell">
+        {screen === "profile" && myProfile && (
+          <div className="page">
+            <div className="page-head">
+              <div className="eyebrow">Mənim profilim</div>
+              <h1>{myProfile.full_name || fullname}</h1>
+              <p>{[myProfile.position_title, myProfile.kafedra, myProfile.faculty].filter(Boolean).join(" · ")}</p>
+            </div>
+
+            <div className="kpi-row" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+              <div className="kpi"><div className="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div><div className="kn">{myProfile.works_count || 0}</div><div className="kl">Publikasiya</div></div>
+              <div className="kpi gold"><div className="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg></div><div className="kn">{myProfile.citations || 0}</div><div className="kl">Sitat</div></div>
+              <div className="kpi gold"><div className="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/></svg></div><div className="kn">{myProfile.h_index || 0}</div><div className="kl">h-indeks</div></div>
+            </div>
+
+            <div className="card" style={{ maxWidth: 720 }}>
+              <div className="card-pad">
+                <div className="card-head">
+                  <div className="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                  <div><h3>Profil məlumatları</h3><div className="sub">OpenAlex göstəriciləri saxlanılan ən son dəyərlərdir</div></div>
+                </div>
+                <ConfRow k="E-poçt" v={myProfile.email || email} />
+                <ConfRow k="ORCID iD" v={myProfile.orcid || "—"} />
+                <ConfRow k="Google Scholar" v={myProfile.scholar_id || "Daxil edilməyib"} />
+                <ConfRow k="ResearchGate" v={myProfile.researchgate || "Daxil edilməyib"} />
+                <ConfRow k="Fakültə" v={myProfile.faculty || "—"} />
+                <ConfRow k="Kafedra" v={myProfile.kafedra || "—"} />
+                <ConfRow k="Vəzifə" v={myProfile.position_title || "—"} />
+                <div style={{ marginTop: 22 }}>
+                  <button className="btn btn-teal" onClick={() => setScreen("entry")} style={{ width: "auto", padding: "12px 22px" }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
+                    Məlumatlarımı redaktə et
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {screen === "hub" && (
           <div className="page">
             <div className="page-head">
@@ -383,7 +479,7 @@ export default function Wizard() {
                   </div>
 
                   <div className="form-actions">
-                    <button className="btn btn-back" onClick={() => setScreen("hub")} style={{ flex: 0.5 }}>Geri</button>
+                    <button className="btn btn-back" onClick={() => setScreen(myProfile ? "profile" : "hub")} style={{ flex: 0.5 }}>Geri</button>
                     <button className="btn btn-teal" onClick={goConfirm}>Davam et → Təsdiq</button>
                   </div>
                 </div>
