@@ -138,12 +138,23 @@ adda-portal/
 
 ## Növbəti addımlar (M1 planına uyğun)
 
-- ✅ **OpenAlex inteqrasiyası** (TAMAMLANDI): ORCID daxil edildikdə publikasiya sayı, sitatlar və h-indeks OpenAlex-dən avtomatik alınır.
-- **Autentifikasiya**: hazırda kimlik yalnız e-poçt + ad əsasındadır (parol yoxdur). İstehsalda **magic-link** e-poçt təsdiqi və ya korporativ SSO əlavə edilməlidir.
-- **Planlı yeniləmə (cron)**: göstəricilərin dövri (məs. həftəlik) avtomatik yenilənməsi — Vercel Cron + OpenAlex.
-- **Tədqiqatçı detal səhifəsi**: hər alimin publikasiya siyahısı, illik trend, kollaborasiya şəbəkəsi.
-- **Admin paneli**: məlumat keyfiyyəti nəzarəti, ixrac (Excel/PDF), kafedra müdirləri üçün təsdiq.
-- **Şəbəkəyə genişlənmə** (Mərhələ B): çoxqurumlu (multi-tenant) arxitektura.
+- ✅ **OpenAlex inteqrasiyası** (TAMAMLANDI): publikasiya, sitat və h-indeks avtomatik alınır.
+- ✅ **İstifadəçi/admin ayrımı** (TAMAMLANDI): `/` istifadəçi profili, `/admin` parolla qorunan tam dashboard.
+- ✅ **Avtomatik yeniləmə** (TAMAMLANDI): Vercel Cron hər gün göstəriciləri yeniləyir + admin paneldən əl ilə yeniləmə.
+- **Pillələnmiş rollar**: rektor / dekan (öz fakültəsi) / kafedra müdiri (öz kafedrası) üçün ayrı görünüşlər.
+- **Tədqiqatçı detal səhifəsi**: hər alimin publikasiya siyahısı, illik trend.
+- **Autentifikasiya**: magic-link və ya korporativ SSO (hazırda user email-əsaslı, admin parol-əsaslı).
+
+## Avtomatik yeniləmə (Vercel Cron)
+
+`vercel.json`-dakı cron hər gün saat 03:00 UTC-də `/api/cron/refresh` endpoint-ini çağırır. Endpoint hər tədqiqatçının OpenAlex göstəricilərini yenidən çəkir (ən köhnələr əvvəl, dayanıqlı/resumable).
+
+**Quraşdırma:**
+1. Vercel-də `CRON_SECRET` mühit dəyişənini təyin edin (təsadüfi uzun sətir — məs. `openssl rand -hex 32`). Vercel cron çağırışını `Authorization: Bearer <CRON_SECRET>` ilə göndərəcək.
+2. Deploy edin — Vercel cron-u avtomatik qeydiyyata alır (Hobby planı: gündə 1 dəfə).
+3. Əl ilə yeniləmə: `/admin` → "Göstəriciləri indi yenilə" düyməsi (admin sessiyası ilə işləyir).
+
+Qeyd: Hobby planında cron gündə bir dəfə işləyir və funksiya maksimum 60 saniyə davam edə bilər. Endpoint hər sətri ayrıca yazdığı üçün vaxt limitinə çatılsa belə, görülən iş itmir.
 
 ## Elmmetrik mənbələr
 

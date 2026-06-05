@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import { signSession, staffAccounts, type Session } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/admin/login  { password }
-// ADMIN_PASSWORD mühit dəyişəni ilə müqayisə edir, uğurlu olduqda
-// httpOnly cookie qoyur. (Pilot üçün sadə qapı — istehsalda gücləndirilməli.)
+// POST /api/admin/login  { username?, password }
+// - Rektor: ADMIN_PASSWORD (istifadəçi adı boş və ya "rektor"/"admin")
+// - Dekan / kafedra müdiri: STAFF_ACCOUNTS-dakı hesablar (istifadəçi adı + parol)
 export async function POST(req: NextRequest) {
   let body: any;
   try {
@@ -14,32 +14,53 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  const pw = process.env.ADMIN_PASSWORD;
-  if (!pw) {
-    return NextResponse.json(
-      { ok: false, message: "ADMIN_PASSWORD təyin edilməyib (Vercel mühit dəyişənləri)." },
-      { status: 500 }
+  const username = String(body.username || "").trim();
+  const password = String(body.password || "");
+
+  if (!password) {
+    return NextResponse.json({ ok: false, message: "Parol tələb olunur." }, { status: 400 });
+  }
+
+  let session: Session | null = null;
+
+  // 1) Rektor / Administrator (ADMIN_PASSWORD)
+  const adminPw = process.env.ADMIN_PASSWORD;
+  const rectorNames = ["", "rektor", "admin", "administrator", "rector"];
+  if (adminPw && password === adminPw && rectorNames.includes(username.toLowerCase())) {
+    session = { role: "rector", name: "Rektor / Administrator" };
+  }
+
+  // 2) İşçi hesabları (dekan / kafedra müdiri)
+  if (!session) {
+    const acc = staffAccounts().find(
+      (a) => a.user.toLowerCase() === username.toLowerCase() && a.pass === password
     );
+    if (acc) {
+      session = {
+        role: acc.role,
+        faculty: acc.faculty,
+        kafedra: acc.kafedra,
+        name: acc.name || acc.user,
+      };
+    }
   }
 
-  if (String(body.password || "") !== pw) {
-    return NextResponse.json({ ok: false, message: "Parol yanlışdır." }, { status: 401 });
+  if (!session) {
+    return NextResponse.json({ ok: false, message: "İstifadəçi adı və ya parol yanlışdır." }, { status: 401 });
   }
 
-  const token = crypto.createHash("sha256").update(pw).digest("hex");
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set("adda_admin", token, {
+  const res = NextResponse.json({ ok: true, role: session.role });
+  res.cookies.set("adda_session", signSession(session), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 8, // 8 saat
+    maxAge: 60 * 60 * 8,
   });
   return res;
 }
 
-// POST /api/admin/login/logout üçün — sadəlik naminə DELETE ilə çıxış
 export async function DELETE() {
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("adda_admin", "", { httpOnly: true, path: "/", maxAge: 0 });
+  res.cookies.set("adda_session", "", { httpOnly: true, path: "/", maxAge: 0 });
   return res;
 }

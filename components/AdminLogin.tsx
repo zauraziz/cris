@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function AdminLogin() {
   const router = useRouter();
+  const [user, setUser] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -16,10 +17,10 @@ export default function AdminLogin() {
       const r = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pw }),
+        body: JSON.stringify({ username: user, password: pw }),
       });
       const d = await r.json();
-      if (!d.ok) throw new Error(d.message || "Parol yanlışdır.");
+      if (!d.ok) throw new Error(d.message || "Giriş alınmadı.");
       router.refresh();
     } catch (e: any) {
       setErr(e.message || "Xəta baş verdi.");
@@ -41,7 +42,19 @@ export default function AdminLogin() {
             </div>
           </div>
           <div className="field">
-            <label>Admin parolu</label>
+            <label>İstifadəçi adı</label>
+            <input
+              className="inp"
+              type="text"
+              value={user}
+              placeholder="dekan.gs (rektor üçün boş buraxın)"
+              onChange={(e) => setUser(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
+              autoFocus
+            />
+          </div>
+          <div className="field">
+            <label>Parol</label>
             <input
               className={"inp" + (err ? " err" : "")}
               type="password"
@@ -49,7 +62,6 @@ export default function AdminLogin() {
               placeholder="••••••••"
               onChange={(e) => setPw(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              autoFocus
             />
             {err && <div className="err-msg">{err}</div>}
           </div>

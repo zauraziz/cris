@@ -1,21 +1,13 @@
 import { cookies } from "next/headers";
-import crypto from "crypto";
 import { getSql, ensureSchema } from "@/lib/db";
 import { ADDA_STRUCTURE } from "@/lib/adda";
+import { verifySession, roleLabel, scopeLabel, type Session } from "@/lib/auth";
 import FacultyAccordion, { FacultyStat } from "@/components/FacultyAccordion";
 import ResearcherTable, { Researcher } from "@/components/ResearcherTable";
 import AdminLogin from "@/components/AdminLogin";
+import RefreshButton from "@/components/RefreshButton";
 
 export const dynamic = "force-dynamic";
-
-function isAdmin(): boolean {
-  const pw = process.env.ADMIN_PASSWORD;
-  if (!pw) return false;
-  const token = cookies().get("adda_admin")?.value;
-  if (!token) return false;
-  const expected = crypto.createHash("sha256").update(pw).digest("hex");
-  return token === expected;
-}
 
 type Row = Researcher & { i10_index: number; openalex_id: string | null };
 
@@ -37,11 +29,31 @@ async function getAll(): Promise<{ rows: Row[]; dbError: boolean }> {
 }
 
 export default async function AdminPage() {
-  if (!isAdmin()) {
+  const session = verifySession(cookies().get("adda_session")?.value);
+  if (!session) {
     return <AdminLogin />;
   }
 
-  const { rows, dbError } = await getAll();
+  const { rows: allRows, dbError } = await getAll();
+
+  // Rola görə əhatə (scope)
+  const isRector = session.role === "rector";
+  const rows =
+    session.role === "dean"
+      ? allRows.filter((r) => r.faculty === session.faculty)
+      : session.role === "head"
+      ? allRows.filter((r) => r.faculty === session.faculty && r.kafedra === session.kafedra)
+      : allRows;
+
+  // Görünən fakültə/kafedra strukturu
+  let structureEntries = Object.entries(ADDA_STRUCTURE);
+  if (session.role === "dean") {
+    structureEntries = structureEntries.filter(([f]) => f === session.faculty);
+  } else if (session.role === "head") {
+    structureEntries = structureEntries
+      .filter(([f]) => f === session.faculty)
+      .map(([f, ks]) => [f, ks.filter((k) => k === session.kafedra)] as [string, string[]]);
+  }
 
   const totalResearchers = rows.length;
   const totalWorks = rows.reduce((s, r) => s + (r.works_count || 0), 0);
@@ -49,9 +61,9 @@ export default async function AdminPage() {
   const maxHIndex = rows.reduce((m, r) => Math.max(m, r.h_index || 0), 0);
   const withOrcid = rows.filter((r) => r.orcid).length;
   const activeKafedras = new Set(rows.map((r) => r.faculty + "|" + r.kafedra)).size;
-  const totalKafedras = Object.values(ADDA_STRUCTURE).reduce((s, ks) => s + ks.length, 0);
+  const totalKafedras = structureEntries.reduce((s, [, ks]) => s + ks.length, 0);
 
-  const faculties: FacultyStat[] = Object.entries(ADDA_STRUCTURE).map(([fac, kafedras]) => {
+  const faculties: FacultyStat[] = structureEntries.map(([fac, kafedras]) => {
     const facRows = rows.filter((r) => r.faculty === fac);
     return {
       name: fac,
@@ -81,6 +93,10 @@ export default async function AdminPage() {
             <div className="brand-txt"><b>İdarəetmə paneli</b><span>ADDA Elm Portalı · Admin</span></div>
           </div>
           <div className="topbar-spacer" />
+          <div className="role-chip">
+            <span className="role-dot" data-role={session.role} />
+            <span><b>{roleLabel(session)}</b>{!isRector && <> · {scopeLabel(session)}</>}</span>
+          </div>
           <a className="btn-ghost" href="/">İstifadəçi tərəfi</a>
           <AdminLogout />
         </div>
@@ -89,9 +105,15 @@ export default async function AdminPage() {
       <div className="shell">
         <div className="page">
           <div className="page-head">
-            <div className="eyebrow">İnstitusional analitika · tam</div>
-            <h1>ADDA elmmetrik mənzərəsi</h1>
-            <p>Bütün qeydiyyatlı tədqiqatçılar, fakültə/kafedra bölgüsü və fərdi göstəricilər. Məlumatlar real vaxtda yenilənir.</p>
+            <div className="eyebrow">{isRector ? "İnstitusional analitika · tam" : roleLabel(session) + " görünüşü"}</div>
+            <h1>{isRector ? "ADDA elmmetrik mənzərəsi" : scopeLabel(session)}</h1>
+            <p>
+              {isRector
+                ? "Bütün qeydiyyatlı tədqiqatçılar, fakültə/kafedra bölgüsü və fərdi göstəricilər."
+                : session.role === "dean"
+                ? "Fakültənizin kafedraları üzrə tədqiqatçılar və elmmetrik göstəriciləri."
+                : "Kafedranızın tədqiqatçıları və elmmetrik göstəriciləri."}
+            </p>
           </div>
 
           {dbError && (
@@ -106,6 +128,15 @@ export default async function AdminPage() {
             <span>Elmmetrik göstəricilər (publikasiya, sitat, h-indeks) <b>OpenAlex</b> açıq bazasından real vaxtda alınır.</span>
           </div>
 
+          {isRector && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, marginBottom: 22, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                Göstəricilər hər gün avtomatik yenilənir (Vercel Cron). Dərhal yeniləmək üçün:
+              </div>
+              <RefreshButton />
+            </div>
+          )}
+
           <div className="kpi-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
             <Kpi n={totalResearchers} l="Tədqiqatçı" path={<><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></>} />
             <Kpi n={totalWorks} l="Publikasiya" path={<><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></>} />
@@ -116,14 +147,18 @@ export default async function AdminPage() {
           </div>
 
           <div className="dash-toolbar">
-            <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>Fakültələr üzrə bölgü</div>
+            <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
+              {session.role === "head" ? "Kafedra göstəriciləri" : "Fakültə üzrə bölgü"}
+            </div>
             <div className="legend"><span><i style={{ background: "var(--teal)" }} />Publikasiya həcmi (kafedra üzrə)</span></div>
           </div>
 
           <FacultyAccordion faculties={faculties} />
 
           <div className="dash-toolbar" style={{ marginTop: 30 }}>
-            <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>Bütün tədqiqatçılar</div>
+            <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
+              {isRector ? "Bütün tədqiqatçılar" : session.role === "dean" ? "Fakültə tədqiqatçıları" : "Kafedra tədqiqatçıları"}
+            </div>
           </div>
 
           <ResearcherTable rows={rows} />
@@ -159,7 +194,7 @@ function AdminLogout() {
     <form
       action={async () => {
         "use server";
-        cookies().set("adda_admin", "", { httpOnly: true, path: "/", maxAge: 0 });
+        cookies().set("adda_session", "", { httpOnly: true, path: "/", maxAge: 0 });
       }}
     >
       <button className="btn-ghost" type="submit">Çıxış</button>

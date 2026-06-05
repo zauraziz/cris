@@ -340,11 +340,17 @@ export default function Wizard() {
                 <ConfRow k="Fakültə" v={myProfile.faculty || "—"} />
                 <ConfRow k="Kafedra" v={myProfile.kafedra || "—"} />
                 <ConfRow k="Vəzifə" v={myProfile.position_title || "—"} />
-                <div style={{ marginTop: 22 }}>
+                <div style={{ marginTop: 22, display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <button className="btn btn-teal" onClick={() => setScreen("entry")} style={{ width: "auto", padding: "12px 22px" }}>
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
                     Məlumatlarımı redaktə et
                   </button>
+                  {myProfile.orcid && (
+                    <a href={`/r/${myProfile.orcid}`} className="btn btn-back" style={{ width: "auto", padding: "12px 22px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      Tam elmi profilim
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

@@ -107,7 +107,14 @@ export default function ResearcherTable({ rows }: { rows: Researcher[] }) {
             )}
             {filtered.map((r, i) => (
               <tr key={r.email + i}>
-                <td><div className="tbl-name">{r.full_name}</div><div className="tbl-mail">{r.email}</div></td>
+                <td>
+                  {r.orcid ? (
+                    <a href={`/r/${r.orcid}`} className="tbl-name" style={{ textDecoration: "none" }}>{r.full_name}</a>
+                  ) : (
+                    <div className="tbl-name">{r.full_name}</div>
+                  )}
+                  <div className="tbl-mail">{r.email}</div>
+                </td>
                 <td>{r.faculty}</td>
                 <td>{r.kafedra}</td>
                 <td>{r.position_title || "—"}</td>
