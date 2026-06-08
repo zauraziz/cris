@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ADDA Elm Portalı",
-  description: "Elmmetrik Profil Sistemi — TURMARIN M1 Pilotu",
+  title: "ADDA Elm Portalı — Current Research Information System (CRIS)",
+  description: "Azərbaycan Dövlət Dəniz Akademiyası — Cari Tədqiqat İnformasiya Sistemi (Current Research Information System). Tədqiqatçı profilləri və elmmetrik göstəricilər.",
+  icons: { icon: "/adda-logo.png" },
 };
 
 export default function RootLayout({

@@ -33,9 +33,8 @@ a{color:inherit}
 .topbar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .topbar-in{max-width:1180px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;gap:12px;cursor:pointer}
-.brand-mark{width:42px;height:42px;border-radius:11px;flex:none;background:linear-gradient(135deg,var(--navy),var(--teal-dk));display:grid;place-items:center;color:#fff;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
-.brand-mark svg{width:24px;height:24px}
-.brand-mark::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 20%, rgba(232,177,76,.5), transparent 50%)}
+.brand-mark{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:#fff}
+.brand-mark img{width:100%;height:100%;object-fit:contain}
 .brand-txt b{font-family:'Fraunces',serif;font-size:18px;color:var(--navy);font-weight:600;display:block;line-height:1.05}
 .brand-txt span{font-size:11px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
 .topbar-spacer{flex:1}
@@ -386,3 +385,10 @@ th.wos-col{color:var(--gold-dk)}
 .btn-reject:hover{background:#fef2f2}
 .btn-reject:disabled{opacity:.6;cursor:default}
 @media(max-width:760px){.mod-item{flex-direction:column;align-items:stretch}.mod-assign .sel{flex:1}}
+
+/* ===== Login hero brendinq (loqo + CRIS adı) ===== */
+.la-brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.la-logo{width:64px;height:64px;flex:none;border-radius:50%;overflow:hidden;background:#fff;object-fit:contain;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.la-brand-name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:#fff;line-height:1.1}
+.la-brand-en{font-size:12.5px;color:var(--gold);font-weight:600;margin-top:4px;letter-spacing:.2px}
+.la-brand-az{font-size:12px;color:#bcd;margin-top:2px}

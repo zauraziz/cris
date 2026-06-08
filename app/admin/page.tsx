@@ -122,9 +122,9 @@ export default async function AdminPage() {
         <div className="topbar-in">
           <div className="brand">
             <div className="brand-mark">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              <img src="/adda-logo.png" alt="ADDA" />
             </div>
-            <div className="brand-txt"><b>İdarəetmə paneli</b><span>ADDA Elm Portalı · Admin</span></div>
+            <div className="brand-txt"><b>İdarəetmə paneli</b><span>ADDA Elm Portalı · Cari Tədqiqat İnformasiya Sistemi</span></div>
           </div>
           <div className="topbar-spacer" />
           <div className="role-chip">
@@ -256,8 +256,8 @@ export default async function AdminPage() {
         </div>
 
         <div className="foot">
-          <b>ADDA Elm Portalı</b> · İdarəetmə paneli · TURMARIN M1 Pilotu · Bakı 2026<br/>
-          Açıq mənbə infrastrukturu: ORCID · OpenAlex · Crossref
+          <b>ADDA Elm Portalı</b> — Current Research Information System · Cari Tədqiqat İnformasiya Sistemi (CRIS)<br/>
+          İdarəetmə paneli · TURMARIN M1 Pilotu · Açıq mənbə infrastrukturu: ORCID · OpenAlex · Crossref · Bakı 2026
         </div>
       </div>
     </>

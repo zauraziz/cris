@@ -321,6 +321,14 @@ export default function Wizard() {
         <div className="login-wrap">
           <div className="login-art">
             <div className="la-top">
+              <div className="la-brand">
+                <img src="/adda-logo.png" alt="ADDA" className="la-logo" />
+                <div>
+                  <div className="la-brand-name">ADDA Elm Portalı</div>
+                  <div className="la-brand-en">Current Research Information System</div>
+                  <div className="la-brand-az">Cari Tədqiqat İnformasiya Sistemi (CRIS)</div>
+                </div>
+              </div>
               <span className="la-badge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                 TURMARIN · M1 Pilotu
@@ -375,9 +383,9 @@ export default function Wizard() {
         <div className="topbar-in">
           <div className="brand" onClick={() => setScreen("hub")}>
             <div className="brand-mark">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+              <img src="/adda-logo.png" alt="ADDA" />
             </div>
-            <div className="brand-txt"><b>ADDA Elm Portalı</b><span>Elmmetrik Profil Sistemi</span></div>
+            <div className="brand-txt"><b>ADDA Elm Portalı</b><span>Cari Tədqiqat İnformasiya Sistemi (CRIS)</span></div>
           </div>
           <div className="topbar-spacer" />
           <div className="user-chip"><div className="av">{initials}</div><span>{fullname}</span></div>

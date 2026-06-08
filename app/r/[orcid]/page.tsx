@@ -302,8 +302,8 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
         </div>
 
         <div className="foot">
-          <b>ADDA Elm Portalı</b> · Tədqiqatçı profili · Bakı 2026<br/>
-          Elmmetrik mənbə: OpenAlex · ORCID
+          <b>ADDA Elm Portalı</b> — Current Research Information System · Cari Tədqiqat İnformasiya Sistemi (CRIS)<br/>
+          Tədqiqatçı profili · Elmmetrik mənbə: OpenAlex · ORCID · Bakı 2026
         </div>
       </div>
     </>
@@ -360,9 +360,9 @@ function DetailTopbar() {
       <div className="topbar-in">
         <a className="brand" href="/" style={{ textDecoration: "none" }}>
           <div className="brand-mark">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+            <img src="/adda-logo.png" alt="ADDA" />
           </div>
-          <div className="brand-txt"><b>ADDA Elm Portalı</b><span>Tədqiqatçı profili</span></div>
+          <div className="brand-txt"><b>ADDA Elm Portalı</b><span>Cari Tədqiqat İnformasiya Sistemi (CRIS)</span></div>
         </a>
       </div>
     </div>
