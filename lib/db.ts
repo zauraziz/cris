@@ -54,5 +54,10 @@ export async function ensureSchema(): Promise<void> {
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS wos_citations INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS wos_h_index INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS wos_checked_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS photo TEXT`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS bio TEXT`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS research_interests TEXT`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS linkedin TEXT`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS website TEXT`;
   _schemaReady = true;
 }

@@ -20,6 +20,11 @@ type DbRow = {
   wos_citations: number;
   wos_h_index: number;
   wos_checked_at: string | null;
+  photo: string | null;
+  bio: string | null;
+  research_interests: string | null;
+  linkedin: string | null;
+  website: string | null;
 };
 
 async function getResearcher(orcid: string): Promise<DbRow | null> {
@@ -29,7 +34,8 @@ async function getResearcher(orcid: string): Promise<DbRow | null> {
     const rows = (await sql`
       SELECT full_name, faculty, kafedra, position_title, orcid, openalex_id,
              scholar_id, researchgate, works_count, citations, h_index, i10_index,
-             wos_works, wos_citations, wos_h_index, wos_checked_at
+             wos_works, wos_citations, wos_h_index, wos_checked_at,
+             photo, bio, research_interests, linkedin, website
       FROM researchers WHERE orcid = ${orcid} LIMIT 1
     `) as DbRow[];
     return rows[0] || null;
@@ -85,7 +91,9 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
 
           {/* Header */}
           <div className="rd-header">
-            <div className="rd-avatar">{initials(r.full_name)}</div>
+            <div className="rd-avatar">
+              {r.photo ? <img src={r.photo} alt={r.full_name} className="rd-photo" /> : initials(r.full_name)}
+            </div>
             <div className="rd-headinfo">
               <h1>{r.full_name}</h1>
               <div className="rd-sub">{[r.position_title, r.kafedra, r.faculty].filter(Boolean).join(" · ")}</div>
@@ -93,9 +101,21 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
                 {r.orcid && <a href={`https://orcid.org/${r.orcid}`} target="_blank" rel="noreferrer" className="rd-link orcid"><b>ORCID</b> {r.orcid}</a>}
                 {r.scholar_id && <a href={`https://scholar.google.com/citations?user=${r.scholar_id}`} target="_blank" rel="noreferrer" className="rd-link">Google Scholar</a>}
                 {r.researchgate && <a href={`https://www.researchgate.net/profile/${r.researchgate}`} target="_blank" rel="noreferrer" className="rd-link">ResearchGate</a>}
+                {r.linkedin && <a href={normalizeUrl(r.linkedin)} target="_blank" rel="noreferrer" className="rd-link">LinkedIn</a>}
+                {r.website && <a href={normalizeUrl(r.website)} target="_blank" rel="noreferrer" className="rd-link">Veb sayt</a>}
               </div>
             </div>
           </div>
+
+          {r.bio && <div className="rd-bio">{r.bio}</div>}
+
+          {r.research_interests && (
+            <div className="rd-interests">
+              {r.research_interests.split(",").map((t) => t.trim()).filter(Boolean).map((t, i) => (
+                <span className="interest-chip" key={i}>{t}</span>
+              ))}
+            </div>
+          )}
 
           {/* Metrics — OpenAlex */}
           <div className="src-tag"><span className="src-dot oa" /> OpenAlex · açıq baza</div>
@@ -271,6 +291,10 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
 // ===== helpers / small components =====
 function initials(name: string): string {
   return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+}
+function normalizeUrl(u: string): string {
+  const s = u.trim();
+  return /^https?:\/\//i.test(s) ? s : "https://" + s;
 }
 function workType(t: string | null): string | null {
   if (!t) return null;

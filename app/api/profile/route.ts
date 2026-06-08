@@ -65,14 +65,22 @@ export async function POST(req: NextRequest) {
   const rg = body.researchgate ? String(body.researchgate).trim() : null;
   const position = body.position_title ? String(body.position_title).trim() : null;
 
+  // Profil özü-idarəetmə sahələri
+  let photo: string | null = body.photo ? String(body.photo) : null;
+  if (photo && (!photo.startsWith("data:image/") || photo.length > 400000)) photo = null; // yalnız kiçik data-URI
+  const bio = body.bio ? String(body.bio).slice(0, 600).trim() : null;
+  const interests = body.research_interests ? String(body.research_interests).slice(0, 400).trim() : null;
+  const linkedin = body.linkedin ? String(body.linkedin).slice(0, 300).trim() : null;
+  const website = body.website ? String(body.website).slice(0, 300).trim() : null;
+
   try {
     await ensureSchema();
     const sql = getSql();
     await sql`
       INSERT INTO researchers
-        (email, full_name, orcid, orcid_name, openalex_id, works_count, citations, h_index, i10_index, scholar_id, researchgate, faculty, kafedra, position_title, updated_at)
+        (email, full_name, orcid, orcid_name, openalex_id, works_count, citations, h_index, i10_index, scholar_id, researchgate, faculty, kafedra, position_title, photo, bio, research_interests, linkedin, website, updated_at)
       VALUES
-        (${email}, ${fullName}, ${orcid}, ${orcidName}, ${openalexId}, ${works}, ${citations}, ${hIndex}, ${i10}, ${scholar}, ${rg}, ${faculty}, ${kafedra}, ${position}, now())
+        (${email}, ${fullName}, ${orcid}, ${orcidName}, ${openalexId}, ${works}, ${citations}, ${hIndex}, ${i10}, ${scholar}, ${rg}, ${faculty}, ${kafedra}, ${position}, ${photo}, ${bio}, ${interests}, ${linkedin}, ${website}, now())
       ON CONFLICT (email) DO UPDATE SET
         full_name      = EXCLUDED.full_name,
         orcid          = EXCLUDED.orcid,
@@ -87,6 +95,11 @@ export async function POST(req: NextRequest) {
         faculty        = EXCLUDED.faculty,
         kafedra        = EXCLUDED.kafedra,
         position_title = EXCLUDED.position_title,
+        photo          = EXCLUDED.photo,
+        bio            = EXCLUDED.bio,
+        research_interests = EXCLUDED.research_interests,
+        linkedin       = EXCLUDED.linkedin,
+        website        = EXCLUDED.website,
         updated_at     = now()
     `;
     return NextResponse.json({ ok: true });

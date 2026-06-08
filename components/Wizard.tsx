@@ -45,6 +45,14 @@ export default function Wizard() {
   const [kafedra, setKafedra] = useState("");
   const [position, setPosition] = useState("");
 
+  // profil özü-idarəetməsi
+  const [photo, setPhoto] = useState<string>("");
+  const [bio, setBio] = useState("");
+  const [interests, setInterests] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [website, setWebsite] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+
   // toast + saving
   const [toast, setToast] = useState<{ msg: string; warn?: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -53,6 +61,39 @@ export default function Wizard() {
   function showToast(msg: string, warn = false) {
     setToast({ msg, warn });
     setTimeout(() => setToast(null), 3200);
+  }
+
+  // Şəkli brauzerdə 400px-ə kiçildib JPEG data-URI kimi saxlayır
+  async function onPhotoPick(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { showToast("Yalnız şəkil faylı seçin.", true); return; }
+    setPhotoBusy(true);
+    try {
+      const dataUrl: string = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result as string);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = dataUrl; });
+      const MAX = 400;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas");
+      ctx.drawImage(img, 0, 0, w, h);
+      const out = canvas.toDataURL("image/jpeg", 0.8);
+      if (out.length > 350000) { showToast("Şəkil çox böyükdür, daha kiçik seçin.", true); }
+      else { setPhoto(out); showToast("Şəkil əlavə edildi."); }
+    } catch {
+      showToast("Şəkil emal edilə bilmədi.", true);
+    } finally {
+      setPhotoBusy(false);
+    }
   }
 
   const initials = fullname
@@ -105,6 +146,11 @@ export default function Wizard() {
         setFaculty(p.faculty || "");
         setKafedra(p.kafedra || "");
         setPosition(p.position_title || "");
+        setPhoto(p.photo || "");
+        setBio(p.bio || "");
+        setInterests(p.research_interests || "");
+        setLinkedin(p.linkedin || "");
+        setWebsite(p.website || "");
         setMyProfile(p);
         setScreen("profile");
       } else {
@@ -213,6 +259,11 @@ export default function Wizard() {
           scholar_id: vScholar?.id || null,
           researchgate: vRg?.id || null,
           faculty, kafedra, position_title: position,
+          photo: photo || null,
+          bio: bio.trim() || null,
+          research_interests: interests.trim() || null,
+          linkedin: linkedin.trim() || null,
+          website: website.trim() || null,
         }),
       });
       const d = await r.json();
@@ -230,6 +281,11 @@ export default function Wizard() {
         scholar_id: vScholar?.id || null,
         researchgate: vRg?.id || null,
         faculty, kafedra, position_title: position,
+        photo: photo || null,
+        bio: bio.trim() || null,
+        research_interests: interests.trim() || null,
+        linkedin: linkedin.trim() || null,
+        website: website.trim() || null,
       };
       setMyProfile(saved);
       setSaving(false);
@@ -317,8 +373,16 @@ export default function Wizard() {
           <div className="page">
             <div className="page-head">
               <div className="eyebrow">Mənim profilim</div>
-              <h1>{myProfile.full_name || fullname}</h1>
-              <p>{[myProfile.position_title, myProfile.kafedra, myProfile.faculty].filter(Boolean).join(" · ")}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+                <div className="prof-photo">
+                  {myProfile.photo ? <img src={myProfile.photo} alt="" /> : <span>{initials}</span>}
+                </div>
+                <div>
+                  <h1 style={{ margin: 0 }}>{myProfile.full_name || fullname}</h1>
+                  <p style={{ margin: "6px 0 0" }}>{[myProfile.position_title, myProfile.kafedra, myProfile.faculty].filter(Boolean).join(" · ")}</p>
+                </div>
+              </div>
+              {myProfile.bio && <p style={{ marginTop: 14, maxWidth: 680, color: "var(--muted)" }}>{myProfile.bio}</p>}
             </div>
 
             <div className="kpi-row" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
@@ -482,6 +546,51 @@ export default function Wizard() {
                       <option value="">Vəzifə seçin...</option>
                       {POSITIONS.map((p) => <option key={p}>{p}</option>)}
                     </select>
+                  </div>
+
+                  <hr style={{ border: "none", borderTop: "1px solid var(--line-2)", margin: "24px 0" }} />
+
+                  <div className="id-field">
+                    <div className="top"><label><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--teal-dk)" strokeWidth="2" style={{ marginRight: 6 }}><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg> Profil şəkli</label></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                      <div className="ph-prev">
+                        {photo ? <img src={photo} alt="" /> : <span>{initials}</span>}
+                      </div>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <label className="btn-verify" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                          {photoBusy ? "Emal olunur..." : photo ? "Şəkli dəyiş" : "Şəkil yüklə"}
+                          <input type="file" accept="image/*" hidden onChange={(e) => onPhotoPick(e.target.files?.[0])} />
+                        </label>
+                        {photo && <button className="btn-back" style={{ padding: "8px 14px" }} onClick={() => setPhoto("")}>Sil</button>}
+                      </div>
+                    </div>
+                    <div className="field-hint">JPG/PNG. Avtomatik kiçildilir (400px). Tövsiyə: kvadrat, üz aydın görünən.</div>
+                  </div>
+
+                  <div className="id-field">
+                    <div className="top"><label>Qısa bioqrafiya</label></div>
+                    <textarea className="inp" rows={3} maxLength={600} placeholder="Elmi maraqlar, təhsil, təcrübə haqqında qısa məlumat..." value={bio} onChange={(e) => setBio(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit" }} />
+                    <div className="field-hint">{bio.length}/600 simvol</div>
+                  </div>
+
+                  <div className="id-field">
+                    <div className="top"><label>Tədqiqat sahələri</label></div>
+                    <input className="inp" placeholder="Məsələn: Dəniz naviqasiyası, Gəmi energetikası, Avtomatika" value={interests} onChange={(e) => setInterests(e.target.value)} />
+                    <div className="field-hint">Vergüllə ayırın. Profil səhifənizdə etiketlər kimi görünəcək.</div>
+                  </div>
+
+                  <div className="id-field">
+                    <div className="two-col">
+                      <div>
+                        <div className="top"><label><span className="src-ic" style={{ background: "#0a66c2", color: "#fff" }}>in</span> LinkedIn</label></div>
+                        <input className="inp" placeholder="linkedin.com/in/..." value={linkedin} onChange={(e) => setLinkedin(e.target.value)} />
+                      </div>
+                      <div>
+                        <div className="top"><label><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--teal-dk)" strokeWidth="2" style={{ marginRight: 5 }}><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20a15 15 0 010-20"/></svg> Şəxsi sayt</label></div>
+                        <input className="inp" placeholder="https://..." value={website} onChange={(e) => setWebsite(e.target.value)} />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="form-actions">
