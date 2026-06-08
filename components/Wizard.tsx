@@ -3,6 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ADDA_STRUCTURE, POSITIONS, EMAIL_DOMAINS, isValidAddaEmail } from "@/lib/adda";
+import ResearchAreaPicker, { type Area } from "@/components/ResearchAreaPicker";
+
+// research_interests sahəsini oxu: JSON massiv, və ya köhnə vergüllü mətn
+function parseAreas(raw: any): Area[] {
+  if (!raw) return [];
+  if (typeof raw === "string") {
+    const s = raw.trim();
+    if (s.startsWith("[")) {
+      try {
+        const arr = JSON.parse(s);
+        if (Array.isArray(arr)) return arr.filter((x) => x && x.name).map((x) => ({ id: x.id || "", name: String(x.name) }));
+      } catch {}
+    }
+    return s.split(",").map((t) => t.trim()).filter(Boolean).map((name) => ({ id: "", name }));
+  }
+  return [];
+}
 
 type Screen = "login" | "hub" | "entry" | "confirm" | "profile";
 type Vstatus = { type: "ok" | "warn" | "err" | "loading"; msg: string } | null;
@@ -48,7 +65,7 @@ export default function Wizard() {
   // profil özü-idarəetməsi
   const [photo, setPhoto] = useState<string>("");
   const [bio, setBio] = useState("");
-  const [interests, setInterests] = useState("");
+  const [interestAreas, setInterestAreas] = useState<Area[]>([]);
   const [linkedin, setLinkedin] = useState("");
   const [website, setWebsite] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -148,7 +165,7 @@ export default function Wizard() {
         setPosition(p.position_title || "");
         setPhoto(p.photo || "");
         setBio(p.bio || "");
-        setInterests(p.research_interests || "");
+        setInterestAreas(parseAreas(p.research_interests));
         setLinkedin(p.linkedin || "");
         setWebsite(p.website || "");
         setMyProfile(p);
@@ -261,7 +278,7 @@ export default function Wizard() {
           faculty, kafedra, position_title: position,
           photo: photo || null,
           bio: bio.trim() || null,
-          research_interests: interests.trim() || null,
+          research_interests: interestAreas.length ? JSON.stringify(interestAreas) : null,
           linkedin: linkedin.trim() || null,
           website: website.trim() || null,
         }),
@@ -283,7 +300,7 @@ export default function Wizard() {
         faculty, kafedra, position_title: position,
         photo: photo || null,
         bio: bio.trim() || null,
-        research_interests: interests.trim() || null,
+        research_interests: interestAreas.length ? JSON.stringify(interestAreas) : null,
         linkedin: linkedin.trim() || null,
         website: website.trim() || null,
       };
@@ -576,8 +593,8 @@ export default function Wizard() {
 
                   <div className="id-field">
                     <div className="top"><label>Tədqiqat sahələri</label></div>
-                    <input className="inp" placeholder="Məsələn: Dəniz naviqasiyası, Gəmi energetikası, Avtomatika" value={interests} onChange={(e) => setInterests(e.target.value)} />
-                    <div className="field-hint">Vergüllə ayırın. Profil səhifənizdə etiketlər kimi görünəcək.</div>
+                    <ResearchAreaPicker value={interestAreas} onChange={setInterestAreas} />
+                    <div className="field-hint">Standartlaşdırılmış elmi taksonomiyadan (OpenAlex) seçin — sahə seçdikdə əlaqəli təkliflər avtomatik görünəcək.</div>
                   </div>
 
                   <div className="id-field">

@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   let photo: string | null = body.photo ? String(body.photo) : null;
   if (photo && (!photo.startsWith("data:image/") || photo.length > 400000)) photo = null; // yalnız kiçik data-URI
   const bio = body.bio ? String(body.bio).slice(0, 600).trim() : null;
-  const interests = body.research_interests ? String(body.research_interests).slice(0, 400).trim() : null;
+  const interests = body.research_interests ? String(body.research_interests).slice(0, 4000).trim() : null;
   const linkedin = body.linkedin ? String(body.linkedin).slice(0, 300).trim() : null;
   const website = body.website ? String(body.website).slice(0, 300).trim() : null;
 

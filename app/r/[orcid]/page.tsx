@@ -111,7 +111,7 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
 
           {r.research_interests && (
             <div className="rd-interests">
-              {r.research_interests.split(",").map((t) => t.trim()).filter(Boolean).map((t, i) => (
+              {areaNames(r.research_interests).map((t, i) => (
                 <span className="interest-chip" key={i}>{t}</span>
               ))}
             </div>
@@ -295,6 +295,17 @@ function initials(name: string): string {
 function normalizeUrl(u: string): string {
   const s = u.trim();
   return /^https?:\/\//i.test(s) ? s : "https://" + s;
+}
+// research_interests: JSON massiv [{id,name}] və ya köhnə vergüllü mətn
+function areaNames(raw: string): string[] {
+  const s = (raw || "").trim();
+  if (s.startsWith("[")) {
+    try {
+      const arr = JSON.parse(s);
+      if (Array.isArray(arr)) return arr.map((x: any) => (x && x.name ? String(x.name) : "")).filter(Boolean);
+    } catch {}
+  }
+  return s.split(",").map((t) => t.trim()).filter(Boolean);
 }
 function workType(t: string | null): string | null {
   if (!t) return null;
