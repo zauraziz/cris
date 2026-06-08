@@ -16,6 +16,10 @@ type DbRow = {
   citations: number;
   h_index: number;
   i10_index: number;
+  wos_works: number;
+  wos_citations: number;
+  wos_h_index: number;
+  wos_checked_at: string | null;
 };
 
 async function getResearcher(orcid: string): Promise<DbRow | null> {
@@ -24,7 +28,8 @@ async function getResearcher(orcid: string): Promise<DbRow | null> {
     const sql = getSql();
     const rows = (await sql`
       SELECT full_name, faculty, kafedra, position_title, orcid, openalex_id,
-             scholar_id, researchgate, works_count, citations, h_index, i10_index
+             scholar_id, researchgate, works_count, citations, h_index, i10_index,
+             wos_works, wos_citations, wos_h_index, wos_checked_at
       FROM researchers WHERE orcid = ${orcid} LIMIT 1
     `) as DbRow[];
     return rows[0] || null;
@@ -92,13 +97,36 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
             </div>
           </div>
 
-          {/* Metrics */}
+          {/* Metrics — OpenAlex */}
+          <div className="src-tag"><span className="src-dot oa" /> OpenAlex · açıq baza</div>
           <div className="kpi-row" style={{ gridTemplateColumns: "repeat(4,1fr)", marginTop: 6 }}>
             <Kpi n={pub} l="Publikasiya" path={<><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></>} />
             <Kpi n={cit} l="Sitat" gold path={<><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></>} />
             <Kpi n={h} l="h-indeks" gold path={<><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/></>} />
             <Kpi n={i10} l="i10-indeks" path={<><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></>} />
           </div>
+
+          {/* Metrics — Web of Science (yoxlanılıbsa) */}
+          {r.wos_checked_at && (
+            <>
+              <div className="src-tag" style={{ marginTop: 18 }}>
+                <span className="src-dot wos" /> Web of Science · rəsmi indeks
+                <span className="src-date">yoxlanıldı: {new Date(r.wos_checked_at).toLocaleDateString("az-AZ")}</span>
+              </div>
+              {r.wos_works > 0 ? (
+                <div className="kpi-row" style={{ gridTemplateColumns: "repeat(3,1fr)", marginTop: 6 }}>
+                  <Kpi n={r.wos_works} l="WoS publikasiya" path={<><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></>} />
+                  <Kpi n={r.wos_citations} l="WoS sitat" gold path={<><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></>} />
+                  <Kpi n={r.wos_h_index} l="WoS h-indeks" gold path={<><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/></>} />
+                </div>
+              ) : (
+                <div className="note-strip" style={{ marginTop: 6 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  <span>ORCID-dəki DOI-lər Web of Science indeksində tapılmadı. WoS əhatəsi üçün DOI-li, beynəlxalq nəşrlər lazımdır.</span>
+                </div>
+              )}
+            </>
+          )}
 
           {!stats.found && (
             <div className="note-strip" style={{ marginTop: 22 }}>

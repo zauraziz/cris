@@ -6,10 +6,16 @@ import FacultyAccordion, { FacultyStat } from "@/components/FacultyAccordion";
 import ResearcherTable, { Researcher } from "@/components/ResearcherTable";
 import AdminLogin from "@/components/AdminLogin";
 import RefreshButton from "@/components/RefreshButton";
+import WosRefreshButton from "@/components/WosRefreshButton";
 
 export const dynamic = "force-dynamic";
 
-type Row = Researcher & { i10_index: number; openalex_id: string | null };
+type Row = Researcher & {
+  i10_index: number;
+  openalex_id: string | null;
+  wos_works: number;
+  wos_checked_at: string | null;
+};
 
 async function getAll(): Promise<{ rows: Row[]; dbError: boolean }> {
   try {
@@ -17,6 +23,7 @@ async function getAll(): Promise<{ rows: Row[]; dbError: boolean }> {
     const sql = getSql();
     const rows = (await sql`
       SELECT full_name, email, orcid, openalex_id, works_count, citations, h_index, i10_index,
+             wos_works, wos_citations, wos_h_index, wos_checked_at,
              scholar_id, researchgate, faculty, kafedra, position_title, updated_at
       FROM researchers
       ORDER BY citations DESC
@@ -62,6 +69,8 @@ export default async function AdminPage() {
   const withOrcid = rows.filter((r) => r.orcid).length;
   const activeKafedras = new Set(rows.map((r) => r.faculty + "|" + r.kafedra)).size;
   const totalKafedras = structureEntries.reduce((s, [, ks]) => s + ks.length, 0);
+  const totalWosCitations = rows.reduce((s, r) => s + (r.wos_citations || 0), 0);
+  const wosChecked = rows.filter((r) => r.wos_checked_at).length;
 
   const faculties: FacultyStat[] = structureEntries.map(([fac, kafedras]) => {
     const facRows = rows.filter((r) => r.faculty === fac);
@@ -125,7 +134,7 @@ export default async function AdminPage() {
 
           <div className="note-strip">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-            <span>Elmmetrik göstəricilər (publikasiya, sitat, h-indeks) <b>OpenAlex</b> açıq bazasından real vaxtda alınır.</span>
+            <span>Elmmetrik göstəricilər (publikasiya, sitat, h-indeks) <b>OpenAlex</b> açıq bazasından real vaxtda alınır. <b>WoS</b> sütunu Web of Science-dən əl ilə yenilənir (rəsmi indeks).</span>
           </div>
 
           {isRector && (
@@ -133,15 +142,19 @@ export default async function AdminPage() {
               <div style={{ fontSize: 12.5, color: "var(--muted)" }}>
                 Göstəricilər hər gün avtomatik yenilənir (Vercel Cron). Dərhal yeniləmək üçün:
               </div>
-              <RefreshButton />
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <RefreshButton />
+                <WosRefreshButton />
+              </div>
             </div>
           )}
 
           <div className="kpi-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
             <Kpi n={totalResearchers} l="Tədqiqatçı" path={<><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></>} />
             <Kpi n={totalWorks} l="Publikasiya" path={<><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></>} />
-            <Kpi n={totalCitations} l="Sitat" gold path={<><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></>} />
+            <Kpi n={totalCitations} l="Sitat · OpenAlex" gold path={<><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></>} />
             <Kpi n={maxHIndex} l="Ən yüksək h-indeks" gold path={<><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/></>} />
+            <Kpi n={totalWosCitations} l="Sitat · WoS" path={<><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></>} />
             <Kpi n={withOrcid} l="ORCID-li" path={<><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></>} />
             <Kpi n={`${activeKafedras}/${totalKafedras}`} l="Aktiv kafedra" path={<><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></>} />
           </div>

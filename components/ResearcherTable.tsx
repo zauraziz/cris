@@ -15,9 +15,11 @@ export type Researcher = {
   scholar_id: string | null;
   researchgate: string | null;
   updated_at: string;
+  wos_citations?: number;
+  wos_h_index?: number;
 };
 
-type SortKey = "full_name" | "faculty" | "kafedra" | "position_title" | "works_count" | "citations" | "h_index" | "updated_at";
+type SortKey = "full_name" | "faculty" | "kafedra" | "position_title" | "works_count" | "citations" | "h_index" | "wos_citations" | "updated_at";
 
 export default function ResearcherTable({ rows }: { rows: Researcher[] }) {
   const [q, setQ] = useState("");
@@ -49,12 +51,13 @@ export default function ResearcherTable({ rows }: { rows: Researcher[] }) {
   }
 
   function exportCsv() {
-    const headers = ["Ad Soyad", "E-poçt", "ORCID", "Fakültə", "Kafedra", "Vəzifə", "Publikasiya", "Sitat", "h-indeks", "Scholar", "ResearchGate", "Yeniləndi"];
+    const headers = ["Ad Soyad", "E-poçt", "ORCID", "Fakültə", "Kafedra", "Vəzifə", "Publikasiya (OpenAlex)", "Sitat (OpenAlex)", "h-indeks (OpenAlex)", "WoS sitat", "WoS h-indeks", "Scholar", "ResearchGate", "Yeniləndi"];
     const lines = [headers.join(",")];
     for (const r of filtered) {
       const row = [
         r.full_name, r.email, r.orcid || "", r.faculty, r.kafedra, r.position_title || "",
-        r.works_count, r.citations, r.h_index, r.scholar_id || "", r.researchgate || "",
+        r.works_count, r.citations, r.h_index, r.wos_citations ?? 0, r.wos_h_index ?? 0,
+        r.scholar_id || "", r.researchgate || "",
         new Date(r.updated_at).toLocaleDateString("az-AZ"),
       ].map((c) => {
         const s = String(c ?? "");
@@ -98,12 +101,13 @@ export default function ResearcherTable({ rows }: { rows: Researcher[] }) {
               <th className="num" onClick={() => setSort("works_count")}>Pub.{arrow("works_count")}</th>
               <th className="num" onClick={() => setSort("citations")}>Sitat{arrow("citations")}</th>
               <th className="num" onClick={() => setSort("h_index")}>h-ind.{arrow("h_index")}</th>
+              <th className="num wos-col" onClick={() => setSort("wos_citations")}>WoS sit.{arrow("wos_citations")}</th>
               <th onClick={() => setSort("updated_at")}>Yeniləndi{arrow("updated_at")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={9} className="tbl-empty">Nəticə tapılmadı</td></tr>
+              <tr><td colSpan={10} className="tbl-empty">Nəticə tapılmadı</td></tr>
             )}
             {filtered.map((r, i) => (
               <tr key={r.email + i}>
@@ -126,6 +130,7 @@ export default function ResearcherTable({ rows }: { rows: Researcher[] }) {
                 <td className="num">{r.works_count}</td>
                 <td className="num strong">{r.citations}</td>
                 <td className="num strong">{r.h_index}</td>
+                <td className="num wos-col">{r.wos_citations ?? 0}</td>
                 <td className="tbl-date">{new Date(r.updated_at).toLocaleDateString("az-AZ")}</td>
               </tr>
             ))}

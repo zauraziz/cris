@@ -47,6 +47,13 @@ a{color:inherit}
 .role-dot[data-role="rector"]{background:var(--gold)}
 .role-dot[data-role="dean"]{background:var(--teal)}
 .role-dot[data-role="head"]{background:#7c9cb5}
+.wos-col{background:rgba(232,177,76,.07)}
+th.wos-col{color:var(--gold-dk)}
+.src-tag{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.src-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.src-dot.oa{background:var(--teal)}
+.src-dot.wos{background:var(--gold-dk)}
+.src-date{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--faint);text-transform:none;letter-spacing:0}
 .btn-ghost{border:1px solid var(--line);background:#fff;color:var(--muted);padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 .btn-ghost:hover{border-color:var(--teal);color:var(--teal-dk)}
 
