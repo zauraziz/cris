@@ -154,3 +154,49 @@ export async function fetchOpenAlexProfile(orcid: string): Promise<OpenAlexProfi
     return base;
   }
 }
+
+// ===== İnstitusional profil (ROR üzrə) =====
+// Webometrics şəffaflıq göstəricisi OpenAlex-i ROR ilə oxuduğundan,
+// bu, ADDA-nın açıq elmi "izini" göstərir.
+export type InstitutionProfile = {
+  found: boolean;
+  openalexId: string | null;
+  displayName: string | null;
+  worksCount: number;
+  citations: number;
+  hIndex: number;
+  i10Index: number;
+  homepage: string | null;
+  countsByYear: YearCount[];
+};
+
+export async function fetchInstitutionByRor(ror: string): Promise<InstitutionProfile> {
+  const empty: InstitutionProfile = {
+    found: false, openalexId: null, displayName: null,
+    worksCount: 0, citations: 0, hIndex: 0, i10Index: 0,
+    homepage: null, countsByYear: [],
+  };
+  try {
+    const url = `${OPENALEX_BASE}/institutions/ror:${encodeURIComponent(ror)}?mailto=${encodeURIComponent(MAILTO)}`;
+    const res = await fetch(url, { next: { revalidate: 86400 } });
+    if (!res.ok) return empty;
+    const i = await res.json();
+    if (!i || !i.id) return empty;
+    const countsByYear: YearCount[] = (i.counts_by_year || [])
+      .map((c: any) => ({ year: c.year, works: c.works_count ?? 0, citations: c.cited_by_count ?? 0 }))
+      .sort((a: YearCount, b: YearCount) => a.year - b.year);
+    return {
+      found: true,
+      openalexId: i.id || null,
+      displayName: i.display_name || null,
+      worksCount: i.works_count ?? 0,
+      citations: i.cited_by_count ?? 0,
+      hIndex: i.summary_stats?.h_index ?? 0,
+      i10Index: i.summary_stats?.i10_index ?? 0,
+      homepage: i.homepage_url || null,
+      countsByYear,
+    };
+  } catch {
+    return empty;
+  }
+}

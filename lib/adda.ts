@@ -41,3 +41,7 @@ export function isValidAddaEmail(email: string): boolean {
     (d) => e.endsWith("@" + d) && e.length > d.length + 1
   );
 }
+
+// ADDA-nın rəsmi identifikatorları (ROR registrindən təsdiqlənib)
+export const ADDA_ROR = "01znwv148";
+export const ADDA_ROR_URL = "https://ror.org/01znwv148";

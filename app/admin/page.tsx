@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { getSql, ensureSchema } from "@/lib/db";
-import { ADDA_STRUCTURE } from "@/lib/adda";
+import { ADDA_STRUCTURE, ADDA_ROR, ADDA_ROR_URL } from "@/lib/adda";
+import { fetchInstitutionByRor } from "@/lib/openalex";
 import { verifySession, roleLabel, scopeLabel, type Session } from "@/lib/auth";
 import FacultyAccordion, { FacultyStat } from "@/components/FacultyAccordion";
 import ResearcherTable, { Researcher } from "@/components/ResearcherTable";
@@ -45,6 +46,9 @@ export default async function AdminPage() {
 
   // Rola görə əhatə (scope)
   const isRector = session.role === "rector";
+
+  // ADDA-nın OpenAlex institusional profili (ROR üzrə) — yalnız rektor görünüşündə
+  const inst = isRector ? await fetchInstitutionByRor(ADDA_ROR) : null;
   const rows =
     session.role === "dean"
       ? allRows.filter((r) => r.faculty === session.faculty)
@@ -158,6 +162,35 @@ export default async function AdminPage() {
             <Kpi n={withOrcid} l="ORCID-li" path={<><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></>} />
             <Kpi n={`${activeKafedras}/${totalKafedras}`} l="Aktiv kafedra" path={<><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></>} />
           </div>
+
+          {isRector && inst && (
+            <div className="inst-panel">
+              <div className="inst-head">
+                <div>
+                  <div className="inst-title">ADDA · OpenAlex institusional profil</div>
+                  <div className="inst-sub">OpenAlex-in ROR identifikatoru vasitəsilə Akademiyaya aid etdiyi açıq elmi iz</div>
+                </div>
+                <a className="ror-badge" href={ADDA_ROR_URL} target="_blank" rel="noreferrer">
+                  <span className="ror-r">ROR</span> {ADDA_ROR}
+                </a>
+              </div>
+              {inst.found ? (
+                <>
+                  <div className="inst-stats">
+                    <div className="inst-stat"><div className="is-n">{inst.worksCount.toLocaleString("az-AZ")}</div><div className="is-l">Publikasiya</div></div>
+                    <div className="inst-stat"><div className="is-n gold">{inst.citations.toLocaleString("az-AZ")}</div><div className="is-l">Sitat</div></div>
+                    <div className="inst-stat"><div className="is-n gold">{inst.hIndex}</div><div className="is-l">h-indeks</div></div>
+                    <div className="inst-stat"><div className="is-n">{inst.i10Index}</div><div className="is-l">i10-indeks</div></div>
+                  </div>
+                  <div className="inst-note">
+                    Bu rəqəmlər OpenAlex-də <b>{inst.displayName || "ADDA"}</b> institutuna aid edilmiş bütün işlərə əsaslanır (yalnız portala qeydiyyatdan keçənlər deyil). <b>Webometrics-in şəffaflıq göstəricisi məhz bu mənbədən — ROR ilə — qidalanır.</b> Tədqiqatçıların mənsubiyyəti düzgün göstərildikcə bu rəqəmlər artacaq.
+                  </div>
+                </>
+              ) : (
+                <div className="inst-note">OpenAlex institut profili hazırda yüklənə bilmədi. Bir azdan yenidən cəhd edin.</div>
+              )}
+            </div>
+          )}
 
           <div className="dash-toolbar">
             <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
