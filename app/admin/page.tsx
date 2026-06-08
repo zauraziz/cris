@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { getSql, ensureSchema } from "@/lib/db";
-import { ADDA_STRUCTURE, ADDA_ROR, ADDA_ROR_URL } from "@/lib/adda";
+import { ADDA_STRUCTURE, ADDA_ROR, ADDA_ROR_URL, POSITIONS } from "@/lib/adda";
 import { fetchInstitutionByRor } from "@/lib/openalex";
+import HarvestButton from "@/components/HarvestButton";
+import ModerationQueue, { PendingItem } from "@/components/ModerationQueue";
 import { verifySession, roleLabel, scopeLabel, type Session } from "@/lib/auth";
 import FacultyAccordion, { FacultyStat } from "@/components/FacultyAccordion";
 import ResearcherTable, { Researcher } from "@/components/ResearcherTable";
@@ -27,12 +29,30 @@ async function getAll(): Promise<{ rows: Row[]; dbError: boolean }> {
              wos_works, wos_citations, wos_h_index, wos_checked_at,
              scholar_id, researchgate, faculty, kafedra, position_title, updated_at
       FROM researchers
+      WHERE status = 'approved' OR status IS NULL
       ORDER BY citations DESC
     `) as Row[];
     return { rows, dbError: false };
   } catch (err) {
     console.error("[/admin] oxuma xətası:", err);
     return { rows: [], dbError: true };
+  }
+}
+
+async function getPending(): Promise<PendingItem[]> {
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT id, full_name, orcid, works_count, citations, h_index
+      FROM researchers
+      WHERE status = 'pending'
+      ORDER BY works_count DESC
+      LIMIT 500
+    `) as PendingItem[];
+    return rows;
+  } catch {
+    return [];
   }
 }
 
@@ -49,6 +69,7 @@ export default async function AdminPage() {
 
   // ADDA-nın OpenAlex institusional profili (ROR üzrə) — yalnız rektor görünüşündə
   const inst = isRector ? await fetchInstitutionByRor(ADDA_ROR) : null;
+  const pending = isRector ? await getPending() : [];
   const rows =
     session.role === "dean"
       ? allRows.filter((r) => r.faculty === session.faculty)
@@ -189,6 +210,24 @@ export default async function AdminPage() {
               ) : (
                 <div className="inst-note">OpenAlex institut profili hazırda yüklənə bilmədi. Bir azdan yenidən cəhd edin.</div>
               )}
+            </div>
+          )}
+
+          {isRector && (
+            <div className="harvest-block">
+              <div className="dash-toolbar" style={{ marginTop: 4 }}>
+                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
+                  Müəlliflərin import-u və moderasiya
+                  {pending.length > 0 && <span className="pending-badge">{pending.length} təsdiq gözləyir</span>}
+                </div>
+              </div>
+              <div className="harvest-intro">
+                OpenAlex-də ADDA-ya (ROR <b>{ADDA_ROR}</b>) aid edilmiş müəllifləri avtomatik gətirin. İdxal olunanlar <b>«təsdiq gözləyir»</b> statusu ilə gəlir; siz fakültə/kafedra təyin edib təsdiqləyənə qədər ictimai reyestrdə görünmür.
+              </div>
+              <HarvestButton />
+              <div style={{ marginTop: 18 }}>
+                <ModerationQueue items={pending} structure={ADDA_STRUCTURE} positions={POSITIONS} />
+              </div>
             </div>
           )}
 

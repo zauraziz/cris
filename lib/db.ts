@@ -59,5 +59,12 @@ export async function ensureSchema(): Promise<void> {
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS research_interests TEXT`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS linkedin TEXT`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS website TEXT`;
+  // Moderasiya / mənbə (institusional harvest üçün)
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'approved'`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'self'`;
+  // Harvest edilən müəlliflərin emaili/kafedrası olmaya bilər
+  await sql`ALTER TABLE researchers ALTER COLUMN email DROP NOT NULL`;
+  await sql`ALTER TABLE researchers ALTER COLUMN faculty DROP NOT NULL`;
+  await sql`ALTER TABLE researchers ALTER COLUMN kafedra DROP NOT NULL`;
   _schemaReady = true;
 }

@@ -200,3 +200,46 @@ export async function fetchInstitutionByRor(ror: string): Promise<InstitutionPro
     return empty;
   }
 }
+
+// ===== İnstitut müəllifləri (harvest üçün) =====
+export type InstAuthor = {
+  openalexId: string;
+  name: string;
+  orcid: string | null;
+  worksCount: number;
+  citations: number;
+  hIndex: number;
+  i10Index: number;
+};
+
+// Verilmiş OpenAlex institut ID-si (I...) üzrə müəllifləri gətirir (son mənsubiyyət).
+export async function fetchInstitutionAuthors(institutionId: string, limit = 200): Promise<InstAuthor[]> {
+  const iid = institutionId.replace("https://openalex.org/", "");
+  const out: InstAuthor[] = [];
+  try {
+    let cursor = "*";
+    while (out.length < limit && cursor) {
+      const url = `${OPENALEX_BASE}/authors?filter=last_known_institutions.id:${iid}` +
+        `&per-page=200&sort=works_count:desc&cursor=${encodeURIComponent(cursor)}&mailto=${encodeURIComponent(MAILTO)}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) break;
+      const data = await res.json();
+      for (const a of data?.results || []) {
+        out.push({
+          openalexId: a.id || "",
+          name: a.display_name || "",
+          orcid: a.orcid ? String(a.orcid).replace("https://orcid.org/", "") : null,
+          worksCount: a.works_count ?? 0,
+          citations: a.cited_by_count ?? 0,
+          hIndex: a.summary_stats?.h_index ?? 0,
+          i10Index: a.summary_stats?.i10_index ?? 0,
+        });
+      }
+      cursor = data?.meta?.next_cursor || "";
+      if (!data?.results?.length) break;
+    }
+  } catch {
+    /* ignore */
+  }
+  return out.filter((a) => a.openalexId && a.name).slice(0, limit);
+}
