@@ -1,5 +1,6 @@
 import { getSql, ensureSchema } from "@/lib/db";
 import { fetchOpenAlexProfile, fetchOpenAlexWorks, type YearCount, type OaWork, type ResearchArea, type Affiliation } from "@/lib/openalex";
+import { fetchOrcidWorks, type OrcidWork } from "@/lib/orcid";
 
 export const dynamic = "force-dynamic";
 
@@ -69,8 +70,21 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
     fetchOpenAlexWorks(orcid, 50),
   ]);
 
+  // OpenAlex bu ORCID üçün publikasiya qaytarmadıqda — siyahını ORCID-dən gətir
+  const orcidWorks: OrcidWork[] =
+    works.length === 0 && r.orcid ? await fetchOrcidWorks(r.orcid) : [];
+
+  // Vahid publikasiya siyahısı: OpenAlex varsa ondan, yoxsa ORCID-dən
+  type PubItem = { key: string; title: string; url: string | null; year: number | null; venue: string | null; type: string | null; citations: number | null; isOA: boolean };
+  const fromOa: PubItem[] = works.map((w) => ({ key: w.id, title: w.title, url: w.doi || w.id, year: w.year, venue: w.venue, type: workType(w.type), citations: w.citations, isOA: w.isOA }));
+  const fromOrcid: PubItem[] = orcidWorks.map((w, i) => ({ key: (w.doi || w.title) + i, title: w.title, url: w.url, year: w.year, venue: w.journal, type: orcidType(w.type), citations: null, isOA: false }));
+  const pubList: PubItem[] = fromOa.length ? fromOa : fromOrcid;
+  const pubSource = fromOa.length ? "OpenAlex" : "ORCID";
+  // Yekun publikasiya sayı: OpenAlex tapıbsa onun sayı, yoxsa ORCID-dən gələn / bazadakı say
+  const oaFound = stats.found && fromOa.length > 0;
+
   // Canlı OpenAlex məlumatı, yoxdursa bazadakı dəyər
-  const pub = stats.found ? stats.worksCount : r.works_count;
+  const pub = stats.found ? stats.worksCount : (orcidWorks.length || r.works_count);
   const cit = stats.found ? stats.citations : r.citations;
   const h = stats.found ? stats.hIndex : r.h_index;
   const i10 = stats.found ? stats.i10Index : r.i10_index;
@@ -117,8 +131,12 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
             </div>
           )}
 
-          {/* Metrics — OpenAlex */}
-          <div className="src-tag"><span className="src-dot oa" /> OpenAlex · açıq baza</div>
+          {/* Metrics — OpenAlex (tapılıbsa) və ya ORCID (mənbə kimi) */}
+          {oaFound ? (
+            <div className="src-tag"><span className="src-dot oa" /> OpenAlex · açıq baza</div>
+          ) : (
+            <div className="src-tag"><span className="src-dot" style={{ background: "#16a34a" }} /> ORCID · özü-bəyan edilmiş profil</div>
+          )}
           <div className="kpi-row" style={{ gridTemplateColumns: "repeat(4,1fr)", marginTop: 6 }}>
             <Kpi n={pub} l="Publikasiya" path={<><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></>} />
             <Kpi n={cit} l="Sitat" gold path={<><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></>} />
@@ -148,10 +166,10 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
             </>
           )}
 
-          {!stats.found && (
+          {!oaFound && (
             <div className="note-strip" style={{ marginTop: 22 }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-              <span>Bu ORCID OpenAlex-də tapılmadı (yeni profil ola bilər). Göstəricilər bazadakı son dəyərlərdir.</span>
+              <span>OpenAlex bu ORCID-i hələ tanımır. Publikasiya siyahısı və sayı ORCID-dən alınıb; sitat və h-indeks OpenAlex bu profili indeksləşdirdikdən sonra avtomatik görünəcək.</span>
             </div>
           )}
 
@@ -250,28 +268,32 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
           {/* Publications */}
           <div className="dash-toolbar" style={{ marginTop: 30 }}>
             <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
-              Publikasiyalar {works.length > 0 && <span style={{ color: "var(--faint)", fontWeight: 400 }}>({works.length}{pub > works.length ? `, ən son ${works.length}` : ""})</span>}
+              Publikasiyalar {pubList.length > 0 && <span style={{ color: "var(--faint)", fontWeight: 400 }}>({pubList.length}{pub > pubList.length ? `, ən son ${pubList.length}` : ""})</span>}
             </div>
-            <div className="legend"><span style={{ color: "var(--faint)" }}>Mənbə: OpenAlex</span></div>
+            <div className="legend"><span style={{ color: "var(--faint)" }}>Mənbə: {pubSource}</span></div>
           </div>
 
-          {works.length === 0 ? (
+          {pubList.length === 0 ? (
             <div className="card"><div className="card-pad" style={{ textAlign: "center", color: "var(--faint)" }}>
-              OpenAlex-də publikasiya tapılmadı.
+              Hələlik publikasiya tapılmadı. OpenAlex və ya ORCID-də DOI-li nəşrlər göründükdə avtomatik əlavə olunacaq.
             </div></div>
           ) : (
             <div className="card"><div className="pub-list">
-              {works.map((w) => (
-                <div className="pub-item" key={w.id}>
+              {pubList.map((w) => (
+                <div className="pub-item" key={w.key}>
                   <div className="pub-main">
-                    <a href={w.doi || w.id} target="_blank" rel="noreferrer" className="pub-title">{w.title}</a>
+                    {w.url ? (
+                      <a href={w.url} target="_blank" rel="noreferrer" className="pub-title">{w.title}</a>
+                    ) : (
+                      <span className="pub-title" style={{ cursor: "default" }}>{w.title}</span>
+                    )}
                     <div className="pub-meta">
-                      {[w.year, w.venue, workType(w.type)].filter(Boolean).join(" · ")}
+                      {[w.year, w.venue, w.type].filter(Boolean).join(" · ")}
                     </div>
                   </div>
                   <div className="pub-side">
                     {w.isOA && <span className="pub-oa">Açıq giriş</span>}
-                    <span className="pub-cit">{w.citations} sitat</span>
+                    {w.citations !== null && <span className="pub-cit">{w.citations} sitat</span>}
                   </div>
                 </div>
               ))}
@@ -316,6 +338,20 @@ function workType(t: string | null): string | null {
     dataset: "Dataset", review: "İcmal",
   };
   return map[t] || t;
+}
+
+// ORCID əsər tipləri (məs. JOURNAL_ARTICLE) → Azərbaycanca
+function orcidType(t: string | null): string | null {
+  if (!t) return null;
+  const map: Record<string, string> = {
+    JOURNAL_ARTICLE: "Məqalə", CONFERENCE_PAPER: "Konfrans məqaləsi",
+    CONFERENCE_ABSTRACT: "Konfrans tezisi", CONFERENCE_POSTER: "Poster",
+    BOOK: "Kitab", BOOK_CHAPTER: "Kitab fəsli", BOOK_REVIEW: "Kitab icmalı",
+    DISSERTATION_THESIS: "Dissertasiya", REPORT: "Hesabat", PREPRINT: "Preprint",
+    DATA_SET: "Dataset", PATENT: "Patent", WORKING_PAPER: "İşçi sənəd",
+    MAGAZINE_ARTICLE: "Jurnal yazısı", NEWSLETTER_ARTICLE: "Bülleten", OTHER: "Digər",
+  };
+  return map[t] || t.toLowerCase().replace(/_/g, " ");
 }
 
 function DetailTopbar() {
