@@ -329,10 +329,6 @@ export default function Wizard() {
                   <div className="la-brand-az">Cari Tədqiqat İnformasiya Sistemi (CRIS)</div>
                 </div>
               </div>
-              <span className="la-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                TURMARIN · M1 Pilotu
-              </span>
               <h1 className="la-title">ADDA-nın elmi<br/>mənzərəsi —<br/>bir platformada</h1>
               <p className="la-sub">Akademiyanın professor-müəllim heyətinin elmmetrik profillərini beynəlxalq bazalarla birləşdirən rəqəmsal sistem.</p>
             </div>
@@ -368,6 +364,7 @@ export default function Wizard() {
               </button>
               <p className="lf-note">Daxil olmaqla, məlumatlarınızın ADDA-nın institusional elmmetrik bazasında saxlanmasına razılıq vermiş olursunuz.</p>
               <div className="lf-demo"><button onClick={demoLogin}>Sınaq üçün nümunə hesabla daxil ol →</button></div>
+              <div className="lf-demo" style={{ marginTop: 8 }}><a href="/researchers" style={{ color: "var(--teal-dk)", fontWeight: 600, textDecoration: "none", fontSize: 13 }}>Tədqiqatçı kataloquna bax (giriş tələb olunmur) →</a></div>
             </div>
           </div>
         </div>
