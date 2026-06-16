@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { Providers } from './providers'
 
 // ⚠️ FONT: Əgər CRIS-də fərqli font istifadə edirsənsə (məs. Plus Jakarta Sans,
 // Sora və ya lokal font), bu sətri öz mövcud konfiqurasiyanla əvəz et.
@@ -64,15 +65,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="az">
-      {/*
-        ⚠️ PROVIDER-LƏR: Əgər mövcud layout-unda ThemeProvider, AuthProvider,
-        QueryClientProvider və s. varsa, onları {children} ətrafında saxla.
-        Məsələn:
-          <body>
-            <Providers>{children}</Providers>
-          </body>
-      */}
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {/* 🔑 KRİTİK: SessionProvider buradan gəlir — bunsuz useSession() undefined qaytarır
+            və /login build zamanı çökür. {children} mütləq <Providers> içində olmalıdır. */}
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }

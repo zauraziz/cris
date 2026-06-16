@@ -1,0 +1,15 @@
+'use client'
+
+import { SessionProvider } from 'next-auth/react'
+import type { ReactNode } from 'react'
+
+/**
+ * Bütün client komponentlərinin (məs. /login səhifəsinin useSession() çağırışının)
+ * NextAuth session kontekstinə çıxışı olması üçün qlobal Provider.
+ *
+ * Əgər başqa qlobal provider-lərin varsa (ThemeProvider, QueryClientProvider,
+ * Toaster və s.), onları da burada SessionProvider içində yerləşdir.
+ */
+export function Providers({ children }: { children: ReactNode }) {
+  return <SessionProvider>{children}</SessionProvider>
+}
