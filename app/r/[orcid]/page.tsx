@@ -1,8 +1,11 @@
 import { getSql, ensureSchema } from "@/lib/db";
+import type { Metadata } from "next";
 import { fetchOpenAlexProfile, fetchOpenAlexWorks, type YearCount, type OaWork, type ResearchArea, type Affiliation } from "@/lib/openalex";
 import { fetchOrcidWorks, type OrcidWork } from "@/lib/orcid";
 
 export const dynamic = "force-dynamic";
+
+const SITE = "https://cris.adda.edu.az";
 
 type DbRow = {
   full_name: string;
@@ -43,6 +46,26 @@ async function getResearcher(orcid: string): Promise<DbRow | null> {
   } catch {
     return null;
   }
+}
+
+export async function generateMetadata({ params }: { params: { orcid: string } }): Promise<Metadata> {
+  const orcid = decodeURIComponent(params.orcid).toUpperCase();
+  const r = await getResearcher(orcid);
+  if (!r) return { title: "Tədqiqatçı tapılmadı", robots: { index: false, follow: true } };
+  const role = [r.position_title, r.kafedra].filter(Boolean).join(", ");
+  const desc = `${r.full_name}${role ? " — " + role : ""}, ${r.faculty}. ADDA Elm Portalı: ${r.works_count} nəşr, ${r.citations} istinad, h-indeks ${r.h_index}.`;
+  return {
+    title: r.full_name,
+    description: desc,
+    alternates: { canonical: `/r/${orcid}` },
+    openGraph: {
+      title: `${r.full_name} — ADDA Elm Portalı`,
+      description: desc,
+      type: "profile",
+      url: `${SITE}/r/${orcid}`,
+      images: [{ url: "/adda-logo.png" }],
+    },
+  };
 }
 
 export default async function ResearcherPage({ params }: { params: { orcid: string } }) {
@@ -96,8 +119,19 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
   const activeYears = years.filter((y) => y.works > 0).length;
   const topField = stats.topics[0]?.name || "—";
 
+  const personLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: r.full_name,
+    ...(r.position_title ? { jobTitle: r.position_title } : {}),
+    affiliation: { "@type": "CollegeOrUniversity", name: "Azərbaycan Dövlət Dəniz Akademiyası", sameAs: "https://ror.org/01znwv148" },
+    ...(r.orcid ? { identifier: `https://orcid.org/${r.orcid}` } : {}),
+    url: `${SITE}/r/${orcid}`,
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personLd) }} />
       <DetailTopbar />
       <div className="shell">
         <div className="page">

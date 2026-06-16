@@ -2,8 +2,12 @@ import { getSql, ensureSchema } from "@/lib/db";
 import { ADDA_STRUCTURE, ADDA_ROR, ADDA_ROR_URL } from "@/lib/adda";
 import { fetchInstitutionByRor, fetchInstitutionCoauthorCountries, fetchInstitutionRecentWorks } from "@/lib/openalex";
 import WorldMap from "@/components/WorldMap";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { getLocale, getDict } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
+
+const SITE = "https://cris.adda.edu.az";
 
 async function getResearcherCount(): Promise<number> {
   try {
@@ -21,14 +25,9 @@ function workType(t: string | null): string {
   return t ? (m[t] || t) : "";
 }
 
-// Layihə ideyasına uyğun elanlar (rəqəmsal elmi nüfuz / açıq elm)
-const ANNOUNCEMENTS = [
-  { tag: "Çağırış", title: "ORCID profilinizi gücləndirin", text: "Əsərlərinizi ORCID-ə əlavə edin və mənsubiyyət olaraq ADDA-nı göstərin — hər düzgün qeyd Akademiyanın beynəlxalq görünürlüyünü artırır.", date: "Davam edir" },
-  { tag: "Yenilik", title: "Tədqiqatçı kataloqu açıldı", text: "Akademiyanın elmi icması artıq ictimai kataloqda — sahə, kafedra və göstəricilər üzrə axtarış mümkündür.", date: "Yeni" },
-  { tag: "Strategiya", title: "Webometrics-ə hazırlıq", text: "Portal açıq elmi infrastruktur (OpenAlex · ROR · ORCID) üzərində qurulub — bu, beynəlxalq reytinqin yeni metodologiyası ilə uyğundur.", date: "2026" },
-];
-
 export default async function Home() {
+  const locale = getLocale();
+  const t = getDict(locale);
   const inst = await fetchInstitutionByRor(ADDA_ROR);
   const [countries, recent, researchers] = await Promise.all([
     inst.found && inst.openalexId ? fetchInstitutionCoauthorCountries(inst.openalexId) : Promise.resolve([]),
@@ -37,50 +36,61 @@ export default async function Home() {
   ]);
   const facultyCount = Object.keys(ADDA_STRUCTURE).length;
   const countryCount = countries.length;
+  const nf = (n: number) => n.toLocaleString(locale);
+
+  const orgLd = {
+    "@context": "https://schema.org",
+    "@type": "CollegeOrUniversity",
+    name: "Azərbaycan Dövlət Dəniz Akademiyası",
+    alternateName: "Azerbaijan State Marine Academy",
+    url: SITE,
+    logo: `${SITE}/adda-logo.png`,
+    sameAs: [ADDA_ROR_URL, "https://www.adda.edu.az"],
+  };
 
   return (
     <div className="shell">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
       {/* Topbar */}
       <div className="topbar">
         <div className="topbar-in">
           <a className="brand" href="/" style={{ textDecoration: "none" }}>
             <div className="brand-mark"><img src="/adda-logo.png" alt="ADDA" /></div>
-            <div className="brand-txt"><b>ADDA Elm Portalı</b><span>Cari Tədqiqat İnformasiya Sistemi (CRIS)</span></div>
+            <div className="brand-txt"><b>ADDA Elm Portalı</b><span>{t.brandSub}</span></div>
           </a>
           <div className="topbar-spacer" />
-          <a className="nav-link" href="/researchers">Tədqiqatçılar</a>
-          <a className="nav-btn" href="/login">Tədqiqatçı girişi</a>
+          <LanguageSwitcher current={locale} />
         </div>
       </div>
 
       <div className="page" style={{ paddingTop: 30 }}>
         {/* Hero */}
         <div className="lp-hero">
-          <div className="eyebrow">Azərbaycan Dövlət Dəniz Akademiyası</div>
-          <h1 className="lp-title">Akademiyanın elmi nüfuzu — bir platformada</h1>
-          <p className="lp-sub">Tədqiqatçı profilləri, beynəlxalq göstəricilər və açıq elmi məlumat — Current Research Information System.</p>
+          <div className="eyebrow">{t.heroEyebrow}</div>
+          <h1 className="lp-title">{t.heroTitle}</h1>
+          <p className="lp-sub">{t.heroSub}</p>
           <div className="lp-cta">
-            <a className="btn-teal-sm" href="/researchers">Tədqiqatçı kataloquna bax</a>
-            <a className="btn-ghost-sm" href="/login">Sistemə daxil ol</a>
+            <a className="btn-teal-sm" href="/researchers">{t.ctaCatalog}</a>
+            <a className="btn-ghost-sm" href="/login">{t.ctaLogin}</a>
           </div>
         </div>
 
         {/* Statistika */}
-        <div className="lp-section-head">Hesabatlar və statistika</div>
+        <div className="lp-section-head">{t.secStats}</div>
         <div className="lp-stats">
-          <Stat n={researchers} l="Tədqiqatçı" icon="users" />
-          <Stat n={inst.found ? inst.worksCount.toLocaleString("az-AZ") : "—"} l="Nəşr" icon="doc" />
-          <Stat n={inst.found ? inst.citations.toLocaleString("az-AZ") : "—"} l="İstinad (sitat)" icon="quote" gold />
-          <Stat n={inst.found ? inst.hIndex : "—"} l="h-indeks" icon="chart" gold />
-          <Stat n={countryCount || "—"} l="Əməkdaşlıq ölkəsi" icon="globe" />
-          <Stat n={facultyCount} l="Fakültə" icon="building" />
+          <Stat n={researchers} l={t.statResearchers} icon="users" />
+          <Stat n={inst.found ? nf(inst.worksCount) : "—"} l={t.statPubs} icon="doc" />
+          <Stat n={inst.found ? nf(inst.citations) : "—"} l={t.statCitations} icon="quote" gold />
+          <Stat n={inst.found ? inst.hIndex : "—"} l={t.statHindex} icon="chart" gold />
+          <Stat n={countryCount || "—"} l={t.statCountries} icon="globe" />
+          <Stat n={facultyCount} l={t.statFaculties} icon="building" />
         </div>
 
         {/* Beynəlxalq əməkdaşlıq xəritəsi */}
         {inst.found && (
           <>
-            <div className="lp-section-head">Beynəlxalq əməkdaşlıqlar</div>
-            <p className="lp-section-sub">Akademiya tədqiqatçılarının nəşrlərində həmmüəllif olduqları ölkələr (OpenAlex məlumatları əsasında).</p>
+            <div className="lp-section-head">{t.secCollab}</div>
+            <p className="lp-section-sub">{t.secCollabSub}</p>
             <div className="card"><div style={{ padding: 18 }}>
               <WorldMap countries={countries} />
             </div></div>
@@ -90,7 +100,7 @@ export default async function Home() {
         {/* Son nəşrlər + Elanlar */}
         <div className="lp-twocol">
           <div>
-            <div className="lp-section-head">Son nəşrlər</div>
+            <div className="lp-section-head">{t.secRecent}</div>
             {recent.length > 0 ? (
               <div className="card"><div className="pub-list">
                 {recent.map((w, i) => (
@@ -103,14 +113,14 @@ export default async function Home() {
                 ))}
               </div></div>
             ) : (
-              <div className="card"><div className="card-pad" style={{ color: "var(--faint)", textAlign: "center" }}>Nəşrlər yüklənir...</div></div>
+              <div className="card"><div className="card-pad" style={{ color: "var(--faint)", textAlign: "center" }}>{t.loadingPubs}</div></div>
             )}
           </div>
 
           <div>
-            <div className="lp-section-head">Elanlar</div>
+            <div className="lp-section-head">{t.secAnnounce}</div>
             <div className="ann-list">
-              {ANNOUNCEMENTS.map((a, i) => (
+              {t.announcements.map((a, i) => (
                 <div className="ann-item" key={i}>
                   <div className="ann-top"><span className="ann-tag">{a.tag}</span><span className="ann-date">{a.date}</span></div>
                   <div className="ann-title">{a.title}</div>
@@ -122,8 +132,8 @@ export default async function Home() {
         </div>
 
         <div className="foot">
-          <b>ADDA Elm Portalı</b> — Current Research Information System · Cari Tədqiqat İnformasiya Sistemi (CRIS)<br/>
-          ROR: <a href={ADDA_ROR_URL} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{ADDA_ROR}</a> · Açıq mənbə infrastrukturu: ORCID · OpenAlex · Crossref · Bakı 2026
+          <b>ADDA Elm Portalı</b> — Current Research Information System · {t.brandSub}<br/>
+          ROR: <a href={ADDA_ROR_URL} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{ADDA_ROR}</a> · {t.footerTag}
         </div>
       </div>
     </div>

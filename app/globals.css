@@ -479,3 +479,15 @@ th.wos-col{color:var(--gold-dk)}
 .wm-tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy)}
 .cc-row{cursor:default;padding:2px 4px;border-radius:6px;transition:background .12s}
 .cc-row.active{background:var(--teal-soft)}
+
+/* ===== Dil keçidi ===== */
+.lang-sw{position:relative}
+.lang-btn{display:flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);font-weight:700;font-size:13px;cursor:pointer;transition:.15s}
+.lang-btn:hover{border-color:var(--teal);color:var(--teal-dk)}
+.lang-cur{letter-spacing:.3px}
+.lang-menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);padding:6px;min-width:170px;z-index:20}
+.lang-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;border:none;background:none;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--ink);text-align:left;transition:.12s}
+.lang-item:hover{background:var(--teal-soft)}
+.lang-item.active{background:var(--navy);color:#fff}
+.lang-short{font-weight:700;font-size:11px;min-width:24px;color:var(--gold-dk)}
+.lang-item.active .lang-short{color:var(--gold)}
