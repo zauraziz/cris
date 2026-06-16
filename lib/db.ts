@@ -66,5 +66,18 @@ export async function ensureSchema(): Promise<void> {
   await sql`ALTER TABLE researchers ALTER COLUMN email DROP NOT NULL`;
   await sql`ALTER TABLE researchers ALTER COLUMN faculty DROP NOT NULL`;
   await sql`ALTER TABLE researchers ALTER COLUMN kafedra DROP NOT NULL`;
+  // Dinamik admin hesabları (kafedra müdirləri və s.)
+  await sql`
+    CREATE TABLE IF NOT EXISTS admin_accounts (
+      id           SERIAL PRIMARY KEY,
+      username     TEXT UNIQUE NOT NULL,
+      pass_hash    TEXT NOT NULL,
+      role         TEXT NOT NULL DEFAULT 'head',
+      faculty      TEXT,
+      kafedra      TEXT,
+      name         TEXT,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
   _schemaReady = true;
 }

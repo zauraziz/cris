@@ -68,6 +68,25 @@ export function staffAccounts(): StaffAccount[] {
 }
 
 // Sessiyaya görə insan-oxunaqlı rol etiketi
+// Parol hashing (scrypt + təsadüfi salt) — "salt:hash" formatında saxlanır
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 32).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+export function verifyPassword(password: string, stored: string): boolean {
+  try {
+    const [salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
+    const calc = crypto.scryptSync(password, salt, 32).toString("hex");
+    return crypto.timingSafeEqual(Buffer.from(calc, "hex"), Buffer.from(hash, "hex"));
+  } catch {
+    return false;
+  }
+}
+
+// Sessiyaya görə insan-oxunaqlı rol etiketi
 export function roleLabel(s: Session): string {
   if (s.role === "rector") return "Rektor / Administrator";
   if (s.role === "dean") return "Dekan";

@@ -10,6 +10,8 @@ import ResearcherTable, { Researcher } from "@/components/ResearcherTable";
 import AdminLogin from "@/components/AdminLogin";
 import RefreshButton from "@/components/RefreshButton";
 import WosRefreshButton from "@/components/WosRefreshButton";
+import AdminManage, { ManageRow } from "@/components/AdminManage";
+import AdminAccounts, { AdminAccount } from "@/components/AdminAccounts";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,36 @@ async function getPending(): Promise<PendingItem[]> {
   }
 }
 
+async function getManageRows(): Promise<ManageRow[]> {
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT id, full_name, orcid, email, faculty, kafedra, position_title, works_count, citations, source
+      FROM researchers
+      WHERE status = 'approved' OR status IS NULL
+      ORDER BY full_name
+    `) as ManageRow[];
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+async function getAdminAccounts(): Promise<AdminAccount[]> {
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT id, username, role, faculty, kafedra, name
+      FROM admin_accounts ORDER BY created_at DESC
+    `) as AdminAccount[];
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
 export default async function AdminPage() {
   const session = verifySession(cookies().get("adda_session")?.value);
   if (!session) {
@@ -70,6 +102,8 @@ export default async function AdminPage() {
   // ADDA-nın OpenAlex institusional profili (ROR üzrə) — yalnız rektor görünüşündə
   const inst = isRector ? await fetchInstitutionByRor(ADDA_ROR) : null;
   const pending = isRector ? await getPending() : [];
+  const manageRows = isRector ? await getManageRows() : [];
+  const adminAccounts = isRector ? await getAdminAccounts() : [];
   const rows =
     session.role === "dean"
       ? allRows.filter((r) => r.faculty === session.faculty)
@@ -228,6 +262,34 @@ export default async function AdminPage() {
               <div style={{ marginTop: 18 }}>
                 <ModerationQueue items={pending} structure={ADDA_STRUCTURE} positions={POSITIONS} />
               </div>
+            </div>
+          )}
+
+          {isRector && (
+            <div className="harvest-block">
+              <div className="dash-toolbar" style={{ marginTop: 4 }}>
+                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
+                  Profillərin idarə edilməsi
+                </div>
+              </div>
+              <div className="harvest-intro">
+                Təkrarlanan profilləri birləşdirin (məs. OpenAlex-dən gələn və əl ilə əlavə edilən eyni şəxs) və ya lazımsız profilləri reyestrdən silin.
+              </div>
+              <AdminManage rows={manageRows} />
+            </div>
+          )}
+
+          {isRector && (
+            <div className="harvest-block">
+              <div className="dash-toolbar" style={{ marginTop: 4 }}>
+                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
+                  Admin hesabları (kafedra müdirləri)
+                </div>
+              </div>
+              <div className="harvest-intro">
+                Kafedra müdirləri və dekanlar üçün admin hesabı yaradın. Onlar yalnız öz kafedra/fakültələrinin göstəricilərini görəcəklər.
+              </div>
+              <AdminAccounts accounts={adminAccounts} structure={ADDA_STRUCTURE} />
             </div>
           )}
 

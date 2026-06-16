@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { signSession, staffAccounts, type Session } from "@/lib/auth";
+import { signSession, staffAccounts, verifyPassword, type Session } from "@/lib/auth";
+import { getSql, ensureSchema } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     session = { role: "rector", name: "Rektor / Administrator" };
   }
 
-  // 2) İşçi hesabları (dekan / kafedra müdiri)
+  // 2) İşçi hesabları (dekan / kafedra müdiri) — env STAFF_ACCOUNTS
   if (!session) {
     const acc = staffAccounts().find(
       (a) => a.user.toLowerCase() === username.toLowerCase() && a.pass === password
@@ -42,6 +43,29 @@ export async function POST(req: NextRequest) {
         kafedra: acc.kafedra,
         name: acc.name || acc.user,
       };
+    }
+  }
+
+  // 3) Dinamik admin hesabları (bazada — kafedra müdirləri)
+  if (!session && username) {
+    try {
+      await ensureSchema();
+      const sql = getSql();
+      const rows = (await sql`
+        SELECT username, pass_hash, role, faculty, kafedra, name
+        FROM admin_accounts WHERE lower(username) = ${username.toLowerCase()} LIMIT 1
+      `) as { username: string; pass_hash: string; role: string; faculty: string | null; kafedra: string | null; name: string | null }[];
+      const acc = rows[0];
+      if (acc && verifyPassword(password, acc.pass_hash)) {
+        session = {
+          role: acc.role as Session["role"],
+          faculty: acc.faculty || undefined,
+          kafedra: acc.kafedra || undefined,
+          name: acc.name || acc.username,
+        };
+      }
+    } catch {
+      // baza əlçatmazsa keç
     }
   }
 
