@@ -7,6 +7,7 @@
 export const ADDA_STRUCTURE: Record<string, string[]> = {
   "Gəmi Sürücülüyü fakültəsi": [
     "Dəniz naviqasiyası",
+    "Gəmi sürücülüyü",
     "Gəmiqayırma və gəmi təmiri",
     "Humanitar fənnlər",
     "İngilis dili",
