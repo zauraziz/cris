@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { WORLD_PATHS, MAP_W, MAP_H } from "./worldPaths";
 
 export type CoCountry = { code: string; name: string; count: number };
@@ -21,28 +24,16 @@ const CENTROIDS: Record<string, [number, number]> = {
 const projX = (lon: number) => ((lon + 180) / 360) * MAP_W;
 const projY = (lat: number) => ((90 - lat) / 180) * MAP_H;
 
-function CountryList({ items }: { items: CoCountry[] }) {
-  const max = items[0]?.count || 1;
-  return (
-    <div className="cc-list">
-      {items.slice(0, 12).map((c) => (
-        <div className="cc-row" key={c.code}>
-          <span className="cc-name">{c.name}</span>
-          <span className="cc-bar"><span style={{ width: `${Math.max(6, (c.count / max) * 100)}%` }} /></span>
-          <span className="cc-num">{c.count}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+type Hover = { code: string; name: string; count: number; x: number; y: number } | null;
 
 export default function WorldMap({ countries }: { countries: CoCountry[] }) {
+  const [hover, setHover] = useState<Hover>(null);
   const max = countries[0]?.count || 1;
   const markers = countries.filter((c) => CENTROIDS[c.code]);
 
   return (
     <div className="wm-wrap">
-      <div className="wm-map">
+      <div className="wm-map" style={{ position: "relative" }}>
         <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} style={{ width: "100%", height: "auto", display: "block" }} role="img" aria-label="Beynəlxalq əməkdaşlıq xəritəsi">
           <g>
             {WORLD_PATHS.map((d, i) => (
@@ -52,21 +43,46 @@ export default function WorldMap({ countries }: { countries: CoCountry[] }) {
           <g>
             {markers.map((c) => {
               const [lon, lat] = CENTROIDS[c.code];
-              const r = 3 + Math.sqrt(c.count / max) * 14;
+              const cx = projX(lon), cy = projY(lat);
+              const active = hover?.code === c.code;
+              const r = (3 + Math.sqrt(c.count / max) * 14) * (active ? 1.25 : 1);
               return (
-                <g key={c.code}>
-                  <circle cx={projX(lon)} cy={projY(lat)} r={r + 3} fill="#E8B14C" fillOpacity={0.18} />
-                  <circle cx={projX(lon)} cy={projY(lat)} r={r} fill="#E8B14C" fillOpacity={0.85} stroke="#b8860f" strokeWidth={0.8}>
-                    <title>{c.name}: {c.count}</title>
-                  </circle>
+                <g
+                  key={c.code}
+                  style={{ cursor: "pointer" }}
+                  onMouseEnter={() => setHover({ code: c.code, name: c.name, count: c.count, x: (cx / MAP_W) * 100, y: (cy / MAP_H) * 100 })}
+                  onMouseLeave={() => setHover(null)}
+                >
+                  <circle cx={cx} cy={cy} r={r + 4} fill="#E8B14C" fillOpacity={active ? 0.3 : 0.18} />
+                  <circle cx={cx} cy={cy} r={r} fill="#E8B14C" fillOpacity={active ? 1 : 0.85} stroke="#b8860f" strokeWidth={active ? 1.4 : 0.8} />
                 </g>
               );
             })}
           </g>
         </svg>
+        {hover && (
+          <div className="wm-tip" style={{ left: `${hover.x}%`, top: `${hover.y}%` }}>
+            <b>{hover.name}</b>
+            <span>{hover.count} nəşr</span>
+          </div>
+        )}
       </div>
+
       {countries.length > 0 ? (
-        <CountryList items={countries} />
+        <div className="cc-list">
+          {countries.slice(0, 12).map((c) => (
+            <div
+              className={"cc-row" + (hover?.code === c.code ? " active" : "")}
+              key={c.code}
+              onMouseEnter={() => CENTROIDS[c.code] && setHover({ code: c.code, name: c.name, count: c.count, x: (projX(CENTROIDS[c.code][0]) / MAP_W) * 100, y: (projY(CENTROIDS[c.code][1]) / MAP_H) * 100 })}
+              onMouseLeave={() => setHover(null)}
+            >
+              <span className="cc-name">{c.name}</span>
+              <span className="cc-bar"><span style={{ width: `${Math.max(6, (c.count / max) * 100)}%` }} /></span>
+              <span className="cc-num">{c.count}</span>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="cc-empty">OpenAlex məlumatlarında hələlik beynəlxalq həmmüəllif ölkəsi tapılmadı.</div>
       )}

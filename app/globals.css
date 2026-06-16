@@ -471,3 +471,11 @@ th.wos-col{color:var(--gold-dk)}
 .signout-btn:hover{color:#b91c1c;border-color:#fca5a5;background:#fef2f2}
 
 .cc-empty{display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;color:var(--faint);padding:20px;border:1px dashed var(--line);border-radius:10px}
+
+/* ===== İnteraktiv xəritə tooltip ===== */
+.wm-tip{position:absolute;transform:translate(-50%,-128%);background:var(--navy);color:#fff;padding:6px 12px;border-radius:9px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 18px rgba(6,26,46,.3);z-index:6;display:flex;flex-direction:column;align-items:center;line-height:1.25}
+.wm-tip b{font-size:13px;font-weight:700}
+.wm-tip span{color:var(--gold);font-weight:700;font-size:11.5px;margin-top:1px}
+.wm-tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy)}
+.cc-row{cursor:default;padding:2px 4px;border-radius:6px;transition:background .12s}
+.cc-row.active{background:var(--teal-soft)}
