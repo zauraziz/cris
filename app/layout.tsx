@@ -1,56 +1,78 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import Providers from "@/components/Providers";
-import { getLocale } from "@/lib/i18n";
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-const SITE = "https://cris.adda.edu.az";
+// ⚠️ FONT: Əgər CRIS-də fərqli font istifadə edirsənsə (məs. Plus Jakarta Sans,
+// Sora və ya lokal font), bu sətri öz mövcud konfiqurasiyanla əvəz et.
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE),
+  metadataBase: new URL('https://cris.adda.edu.az'),
   title: {
-    default: "ADDA Elm Portalı — Current Research Information System (CRIS)",
-    template: "%s — ADDA Elm Portalı",
+    default: 'CRIS — ADDA Tədqiqat İnformasiya Sistemi',
+    template: '%s | CRIS · ADDA',
   },
   description:
-    "Azərbaycan Dövlət Dəniz Akademiyası — Cari Tədqiqat İnformasiya Sistemi (Current Research Information System). Tədqiqatçı profilləri, beynəlxalq elmmetrik göstəricilər və açıq elmi məlumat.",
-  applicationName: "ADDA Elm Portalı",
+    'Azərbaycan Dövlət Dəniz Akademiyasının (ADDA) Tədqiqat İnformasiya Sistemi (CRIS) — tədqiqatçı profilləri, elmi nəşrlər, OpenAlex və ORCID inteqrasiyası ilə institusional elmi fəaliyyətin vahid platforması.',
+  applicationName: 'CRIS ADDA',
+  authors: [{ name: 'Azərbaycan Dövlət Dəniz Akademiyası' }],
+  generator: 'Next.js',
   keywords: [
-    "ADDA", "Azərbaycan Dövlət Dəniz Akademiyası", "Azerbaijan State Marine Academy",
-    "CRIS", "elm portalı", "tədqiqatçı", "ORCID", "OpenAlex", "elmmetrik", "research information system",
+    'CRIS',
+    'ADDA',
+    'tədqiqat',
+    'elmi nəşrlər',
+    'OpenAlex',
+    'ORCID',
+    'Azərbaycan Dövlət Dəniz Akademiyası',
+    'TURMARIN',
   ],
-  authors: [{ name: "Azərbaycan Dövlət Dəniz Akademiyası" }],
-  icons: { icon: "/adda-logo.png", apple: "/adda-logo.png" },
-  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: "ADDA Elm Portalı",
-    title: "ADDA Elm Portalı — Current Research Information System (CRIS)",
-    description: "Azərbaycan Dövlət Dəniz Akademiyasının tədqiqatçı profilləri və elmmetrik göstəriciləri.",
-    url: SITE,
-    images: [{ url: "/adda-logo.png", width: 700, height: 699, alt: "ADDA" }],
-  },
-  twitter: {
-    card: "summary",
-    title: "ADDA Elm Portalı — CRIS",
-    description: "Azərbaycan Dövlət Dəniz Akademiyasının tədqiqat informasiya sistemi.",
-    images: ["/adda-logo.png"],
-  },
-};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = getLocale();
+  // 🔻 Bing Webmaster Tools doğrulaması (msvalidate.01)
+  // Render olunmuş HTML: <meta name="msvalidate.01" content="08766882CE682E46BC59C50AF37EB096"/>
+  verification: {
+    // google: 'BURAYA-GOOGLE-KODUN', // əgər varsa açıb əlavə et
+    other: {
+      'msvalidate.01': '08766882CE682E46BC59C50AF37EB096',
+    },
+  },
+
+  openGraph: {
+    type: 'website',
+    locale: 'az_AZ',
+    url: 'https://cris.adda.edu.az',
+    siteName: 'CRIS · ADDA',
+    title: 'CRIS — ADDA Tədqiqat İnformasiya Sistemi',
+    description:
+      'Tədqiqatçı profilləri, elmi nəşrlər və institusional analitika — ADDA üçün vahid tədqiqat platforması.',
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang={locale}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body><Providers>{children}</Providers></body>
+    <html lang="az">
+      {/*
+        ⚠️ PROVIDER-LƏR: Əgər mövcud layout-unda ThemeProvider, AuthProvider,
+        QueryClientProvider və s. varsa, onları {children} ətrafında saxla.
+        Məsələn:
+          <body>
+            <Providers>{children}</Providers>
+          </body>
+      */}
+      <body className={inter.className}>{children}</body>
     </html>
-  );
+  )
 }
