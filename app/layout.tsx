@@ -1,75 +1,56 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { Providers } from './providers'
+import type { Metadata } from "next";
+import "./globals.css";
+import Providers from "@/components/session-wrapper";
+import { getLocale } from "@/lib/i18n";
 
-// ⚠️ FONT: Əgər CRIS-də fərqli font istifadə edirsənsə (məs. Plus Jakarta Sans,
-// Sora və ya lokal font), bu sətri öz mövcud konfiqurasiyanla əvəz et.
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-})
+const SITE = "https://cris.adda.edu.az";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://cris.adda.edu.az'),
+  metadataBase: new URL(SITE),
   title: {
-    default: 'CRIS — ADDA Tədqiqat İnformasiya Sistemi',
-    template: '%s | CRIS · ADDA',
+    default: "ADDA Elm Portalı — Current Research Information System (CRIS)",
+    template: "%s — ADDA Elm Portalı",
   },
   description:
-    'Azərbaycan Dövlət Dəniz Akademiyasının (ADDA) Tədqiqat İnformasiya Sistemi (CRIS) — tədqiqatçı profilləri, elmi nəşrlər, OpenAlex və ORCID inteqrasiyası ilə institusional elmi fəaliyyətin vahid platforması.',
-  applicationName: 'CRIS ADDA',
-  authors: [{ name: 'Azərbaycan Dövlət Dəniz Akademiyası' }],
-  generator: 'Next.js',
+    "Azərbaycan Dövlət Dəniz Akademiyası — Cari Tədqiqat İnformasiya Sistemi (Current Research Information System). Tədqiqatçı profilləri, beynəlxalq elmmetrik göstəricilər və açıq elmi məlumat.",
+  applicationName: "ADDA Elm Portalı",
   keywords: [
-    'CRIS',
-    'ADDA',
-    'tədqiqat',
-    'elmi nəşrlər',
-    'OpenAlex',
-    'ORCID',
-    'Azərbaycan Dövlət Dəniz Akademiyası',
-    'TURMARIN',
+    "ADDA", "Azərbaycan Dövlət Dəniz Akademiyası", "Azerbaijan State Marine Academy",
+    "CRIS", "elm portalı", "tədqiqatçı", "ORCID", "OpenAlex", "elmmetrik", "research information system",
   ],
-
-  // 🔻 Bing Webmaster Tools doğrulaması (msvalidate.01)
-  // Render olunmuş HTML: <meta name="msvalidate.01" content="08766882CE682E46BC59C50AF37EB096"/>
-  verification: {
-    // google: 'BURAYA-GOOGLE-KODUN', // əgər varsa açıb əlavə et
-    other: {
-      'msvalidate.01': '08766882CE682E46BC59C50AF37EB096',
-    },
-  },
-
+  authors: [{ name: "Azərbaycan Dövlət Dəniz Akademiyası" }],
+  icons: { icon: "/adda-logo.png", apple: "/adda-logo.png" },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  alternates: { canonical: "/" },
   openGraph: {
-    type: 'website',
-    locale: 'az_AZ',
-    url: 'https://cris.adda.edu.az',
-    siteName: 'CRIS · ADDA',
-    title: 'CRIS — ADDA Tədqiqat İnformasiya Sistemi',
-    description:
-      'Tədqiqatçı profilləri, elmi nəşrlər və institusional analitika — ADDA üçün vahid tədqiqat platforması.',
+    type: "website",
+    siteName: "ADDA Elm Portalı",
+    title: "ADDA Elm Portalı — Current Research Information System (CRIS)",
+    description: "Azərbaycan Dövlət Dəniz Akademiyasının tədqiqatçı profilləri və elmmetrik göstəriciləri.",
+    url: SITE,
+    images: [{ url: "/adda-logo.png", width: 700, height: 699, alt: "ADDA" }],
   },
-
-  robots: {
-    index: true,
-    follow: true,
+  twitter: {
+    card: "summary",
+    title: "ADDA Elm Portalı — CRIS",
+    description: "Azərbaycan Dövlət Dəniz Akademiyasının tədqiqat informasiya sistemi.",
+    images: ["/adda-logo.png"],
   },
-}
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = getLocale();
   return (
-    <html lang="az">
-      <body className={inter.className}>
-        {/* 🔑 KRİTİK: SessionProvider buradan gəlir — bunsuz useSession() undefined qaytarır
-            və /login build zamanı çökür. {children} mütləq <Providers> içində olmalıdır. */}
-        <Providers>{children}</Providers>
-      </body>
+    <html lang={locale}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body><Providers>{children}</Providers></body>
     </html>
-  )
+  );
 }
