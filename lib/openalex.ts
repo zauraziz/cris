@@ -248,17 +248,39 @@ export async function fetchInstitutionAuthors(institutionId: string, limit = 200
 export type CoCountry = { code: string; name: string; count: number };
 
 // İnstitut işlərində iştirak edən ölkələr (beynəlxalq əməkdaşlıq xəritəsi üçün)
+// Ölkə kodu → Azərbaycanca ad (xəritə və siyahı üçün)
+const COUNTRY_AZ: Record<string, string> = {
+  TR: "Türkiyə", RU: "Rusiya", IR: "İran", UA: "Ukrayna", GE: "Gürcüstan", KZ: "Qazaxıstan",
+  US: "ABŞ", GB: "Böyük Britaniya", DE: "Almaniya", FR: "Fransa", IT: "İtaliya", ES: "İspaniya",
+  PL: "Polşa", CN: "Çin", IN: "Hindistan", JP: "Yaponiya", KR: "Cənubi Koreya", CA: "Kanada",
+  BR: "Braziliya", AU: "Avstraliya", NL: "Niderland", BE: "Belçika", CH: "İsveçrə", AT: "Avstriya",
+  SE: "İsveç", NO: "Norveç", FI: "Finlandiya", DK: "Danimarka", CZ: "Çexiya", SK: "Slovakiya",
+  RO: "Rumıniya", BG: "Bolqarıstan", GR: "Yunanıstan", PT: "Portuqaliya", IE: "İrlandiya",
+  HU: "Macarıstan", RS: "Serbiya", HR: "Xorvatiya", SI: "Sloveniya", LT: "Litva", LV: "Latviya",
+  EE: "Estoniya", BY: "Belarus", MD: "Moldova", AE: "BƏƏ", SA: "Səudiyyə Ərəbistanı", EG: "Misir",
+  IL: "İsrail", QA: "Qətər", KW: "Küveyt", PK: "Pakistan", BD: "Banqladeş", ID: "İndoneziya",
+  MY: "Malayziya", TH: "Tayland", VN: "Vyetnam", PH: "Filippin", SG: "Sinqapur", ZA: "CAR",
+  NG: "Nigeriya", MX: "Meksika", AR: "Argentina", CL: "Çili", NZ: "Yeni Zelandiya", UZ: "Özbəkistan",
+  TM: "Türkmənistan", KG: "Qırğızıstan", TJ: "Tacikistan", MA: "Mərakeş", DZ: "Əlcəzair", TN: "Tunis",
+  CY: "Kipr", MT: "Malta", LU: "Lüksemburq", JO: "İordaniya", LB: "Livan", IQ: "İraq", SY: "Suriya",
+};
+
 export async function fetchInstitutionCoauthorCountries(institutionId: string): Promise<CoCountry[]> {
   const iid = institutionId.replace("https://openalex.org/", "");
   try {
+    // authorships.countries — həmmüəlliflərin ölkələri (institutions.country_code filtrlə korrelyasiya edir).
+    // per-page=200 — bütün ölkə qruplarını al (əvvəl per-page=1 yalnız 1 qrup qaytarırdı!)
     const url = `${OPENALEX_BASE}/works?filter=institutions.id:${iid}` +
-      `&group_by=institutions.country_code&per-page=1&mailto=${encodeURIComponent(MAILTO)}`;
+      `&group_by=authorships.countries&per-page=200&mailto=${encodeURIComponent(MAILTO)}`;
     const res = await fetch(url, { next: { revalidate: 86400 } });
     if (!res.ok) return [];
     const data = await res.json();
     const out: CoCountry[] = (data?.group_by || [])
-      .filter((g: any) => g.key && g.key !== "unknown")
-      .map((g: any) => ({ code: String(g.key).toUpperCase(), name: g.key_display_name || g.key, count: g.count || 0 }));
+      .filter((g: any) => g.key && g.key !== "unknown" && String(g.key).toUpperCase() !== "AZ")
+      .map((g: any) => {
+        const code = String(g.key).toUpperCase();
+        return { code, name: COUNTRY_AZ[code] || g.key_display_name || code, count: g.count || 0 };
+      });
     return out.sort((a, b) => b.count - a.count);
   } catch {
     return [];
