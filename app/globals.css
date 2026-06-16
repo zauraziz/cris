@@ -469,3 +469,5 @@ th.wos-col{color:var(--gold-dk)}
 .btn-ms:hover{background:var(--navy-deep)}
 .signout-btn{display:grid;place-items:center;width:36px;height:36px;margin-left:10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--muted);cursor:pointer;flex:none}
 .signout-btn:hover{color:#b91c1c;border-color:#fca5a5;background:#fef2f2}
+
+.cc-empty{display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;color:var(--faint);padding:20px;border:1px dashed var(--line);border-radius:10px}

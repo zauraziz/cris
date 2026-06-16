@@ -267,24 +267,38 @@ const COUNTRY_AZ: Record<string, string> = {
 
 export async function fetchInstitutionCoauthorCountries(institutionId: string): Promise<CoCountry[]> {
   const iid = institutionId.replace("https://openalex.org/", "");
+  const counts: Record<string, number> = {};
   try {
-    // authorships.countries — həmmüəlliflərin ölkələri (institutions.country_code filtrlə korrelyasiya edir).
-    // per-page=200 — bütün ölkə qruplarını al (əvvəl per-page=1 yalnız 1 qrup qaytarırdı!)
-    const url = `${OPENALEX_BASE}/works?filter=institutions.id:${iid}` +
-      `&group_by=authorships.countries&per-page=200&mailto=${encodeURIComponent(MAILTO)}`;
-    const res = await fetch(url, { next: { revalidate: 86400 } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const out: CoCountry[] = (data?.group_by || [])
-      .filter((g: any) => g.key && g.key !== "unknown" && String(g.key).toUpperCase() !== "AZ")
-      .map((g: any) => {
-        const code = String(g.key).toUpperCase();
-        return { code, name: COUNTRY_AZ[code] || g.key_display_name || code, count: g.count || 0 };
-      });
-    return out.sort((a, b) => b.count - a.count);
+    // İşləri birbaşa gəzib ölkələri topla (group_by-a güvənmirik).
+    // Hər iş üçün authorships.countries + institutions.country_code birləşdirilir, iş başına 1 dəfə sayılır.
+    let cursor: string | null = "*";
+    let pages = 0;
+    while (cursor && pages < 6) {
+      const url = `${OPENALEX_BASE}/works?filter=institutions.id:${iid}` +
+        `&select=authorships&per-page=200&cursor=${encodeURIComponent(cursor)}&mailto=${encodeURIComponent(MAILTO)}`;
+      const res = await fetch(url, { next: { revalidate: 86400 } });
+      if (!res.ok) break;
+      const data: any = await res.json();
+      const results: any[] = data?.results || [];
+      for (const w of results) {
+        const set = new Set<string>();
+        for (const a of (w.authorships || [])) {
+          for (const c of (a.countries || [])) if (c) set.add(String(c).toUpperCase());
+          for (const inst of (a.institutions || [])) if (inst?.country_code) set.add(String(inst.country_code).toUpperCase());
+        }
+        set.forEach((code) => { counts[code] = (counts[code] || 0) + 1; });
+      }
+      cursor = data?.meta?.next_cursor || null;
+      pages++;
+      if (results.length === 0) break;
+    }
   } catch {
     return [];
   }
+  return Object.entries(counts)
+    .filter(([code]) => code && code !== "AZ")
+    .map(([code, count]) => ({ code, name: COUNTRY_AZ[code] || code, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 export type RecentWork = { title: string; year: number | null; venue: string | null; doi: string | null; type: string | null; authors: string };

@@ -65,7 +65,11 @@ export default function WorldMap({ countries }: { countries: CoCountry[] }) {
           </g>
         </svg>
       </div>
-      <CountryList items={countries} />
+      {countries.length > 0 ? (
+        <CountryList items={countries} />
+      ) : (
+        <div className="cc-empty">OpenAlex məlumatlarında hələlik beynəlxalq həmmüəllif ölkəsi tapılmadı.</div>
+      )}
     </div>
   );
 }

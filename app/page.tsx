@@ -77,7 +77,7 @@ export default async function Home() {
         </div>
 
         {/* Beynəlxalq əməkdaşlıq xəritəsi */}
-        {countries.length > 0 && (
+        {inst.found && (
           <>
             <div className="lp-section-head">Beynəlxalq əməkdaşlıqlar</div>
             <p className="lp-section-sub">Akademiya tədqiqatçılarının nəşrlərində həmmüəllif olduqları ölkələr (OpenAlex məlumatları əsasında).</p>
