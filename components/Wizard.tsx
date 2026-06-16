@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { ADDA_STRUCTURE, POSITIONS, EMAIL_DOMAINS, isValidAddaEmail } from "@/lib/adda";
 import ResearchAreaPicker, { type Area } from "@/components/ResearchAreaPicker";
 
@@ -118,6 +119,20 @@ export default function Wizard() {
     : "?";
 
   // ---------- LOGIN ----------
+  const { data: session, status: authStatus } = useSession();
+  const [autoTried, setAutoTried] = useState(false);
+
+  // Microsoft 365 ilə daxil olduqda avtomatik profilə keç
+  useEffect(() => {
+    if (authStatus === "authenticated" && session?.user?.email && screen === "login" && !autoTried) {
+      setAutoTried(true);
+      const e = session.user.email.toLowerCase();
+      setEmail(e);
+      setFullname(session.user.name || e.split("@")[0]);
+      loadProfileAndEnter(e);
+    }
+  }, [authStatus, session, screen]); // eslint-disable-line
+
   async function doLogin() {
     const e = email.trim().toLowerCase();
     const eok = isValidAddaEmail(e);
@@ -343,26 +358,20 @@ export default function Wizard() {
           <div className="login-form">
             <div className="lf-card">
               <h2>Sistemə daxil olun</h2>
-              <p className="lf-lead">Profilinizi tamamlamaq üçün ADDA korporativ e-poçt ünvanınızla daxil olun.</p>
-              <div className="field">
-                <label>ADDA korporativ e-poçt</label>
-                <input className={"inp" + (emailErr ? " err" : "")} type="email" placeholder={"ad.soyad@" + PRIMARY_DOMAIN}
-                  value={email} onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && doLogin()} />
-                {emailErr && <div className="err-msg">Zəhmət olmasa düzgün ADDA e-poçt ünvanı (@{PRIMARY_DOMAIN}) daxil edin.</div>}
-              </div>
-              <div className="field">
-                <label>Tam adınız</label>
-                <input className={"inp" + (nameErr ? " err" : "")} type="text" placeholder="Məsələn: Eldar Qocayev"
-                  value={fullname} onChange={(e) => setFullname(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && doLogin()} />
-                {nameErr && <div className="err-msg">Zəhmət olmasa adınızı daxil edin.</div>}
-              </div>
-              <button className="btn btn-primary" onClick={doLogin}>
-                Daxil ol
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              </button>
-              <p className="lf-note">Daxil olmaqla, məlumatlarınızın ADDA-nın institusional elmmetrik bazasında saxlanmasına razılıq vermiş olursunuz.</p>
+              <p className="lf-lead">Profilinizi tamamlamaq üçün ADDA korporativ Microsoft 365 (Outlook) hesabınızla daxil olun.</p>
+
+              {authStatus === "loading" || (authStatus === "authenticated" && !autoTried) ? (
+                <button className="btn btn-primary" disabled>
+                  <span className="rap-spin" style={{ marginRight: 8 }} /> Yüklənir...
+                </button>
+              ) : (
+                <button className="btn btn-ms" onClick={() => signIn("azure-ad", { callbackUrl: "/login" })}>
+                  <svg viewBox="0 0 23 23" width="18" height="18" style={{ marginRight: 10 }}><rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="12" y="1" width="10" height="10" fill="#7FBA00"/><rect x="1" y="12" width="10" height="10" fill="#00A4EF"/><rect x="12" y="12" width="10" height="10" fill="#FFB900"/></svg>
+                  Microsoft 365 ilə daxil ol
+                </button>
+              )}
+
+              <p className="lf-note">Yalnız ADDA korporativ hesabları (@{PRIMARY_DOMAIN}) qəbul olunur. Daxil olmaqla, məlumatlarınızın institusional elmmetrik bazada saxlanmasına razılıq vermiş olursunuz.</p>
               <div className="lf-demo"><button onClick={demoLogin}>Sınaq üçün nümunə hesabla daxil ol →</button></div>
               <div className="lf-demo" style={{ marginTop: 8 }}><a href="/researchers" style={{ color: "var(--teal-dk)", fontWeight: 600, textDecoration: "none", fontSize: 13 }}>Tədqiqatçı kataloquna bax (giriş tələb olunmur) →</a></div>
             </div>
@@ -386,6 +395,9 @@ export default function Wizard() {
           </div>
           <div className="topbar-spacer" />
           <div className="user-chip"><div className="av">{initials}</div><span>{fullname}</span></div>
+          <button className="signout-btn" onClick={() => signOut({ callbackUrl: "/" })} title="Çıxış">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          </button>
           <button className="btn-ghost" onClick={logout}>Çıxış</button>
         </div>
       </div>

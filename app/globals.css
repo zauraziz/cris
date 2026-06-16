@@ -463,3 +463,9 @@ th.wos-col{color:var(--gold-dk)}
 .ann-title{font-size:14.5px;font-weight:700;color:var(--navy);margin-bottom:4px}
 .ann-text{font-size:12.5px;color:var(--muted);line-height:1.5}
 @media(max-width:860px){.lp-stats{grid-template-columns:repeat(3,1fr)}.wm-wrap{grid-template-columns:1fr}.lp-twocol{grid-template-columns:1fr}.lp-title{font-size:30px}}
+
+/* ===== Microsoft 365 giriş düyməsi + çıxış ===== */
+.btn-ms{display:flex;align-items:center;justify-content:center;width:100%;padding:13px 18px;font-size:15px;font-weight:700;color:#fff;background:var(--navy);border:none;border-radius:11px;cursor:pointer;transition:.15s}
+.btn-ms:hover{background:var(--navy-deep)}
+.signout-btn{display:grid;place-items:center;width:36px;height:36px;margin-left:10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--muted);cursor:pointer;flex:none}
+.signout-btn:hover{color:#b91c1c;border-color:#fca5a5;background:#fef2f2}
