@@ -243,3 +243,51 @@ export async function fetchInstitutionAuthors(institutionId: string, limit = 200
   }
   return out.filter((a) => a.openalexId && a.name).slice(0, limit);
 }
+
+// ===== Main page üçün: həmmüəllif ölkələri və son nəşrlər =====
+export type CoCountry = { code: string; name: string; count: number };
+
+// İnstitut işlərində iştirak edən ölkələr (beynəlxalq əməkdaşlıq xəritəsi üçün)
+export async function fetchInstitutionCoauthorCountries(institutionId: string): Promise<CoCountry[]> {
+  const iid = institutionId.replace("https://openalex.org/", "");
+  try {
+    const url = `${OPENALEX_BASE}/works?filter=institutions.id:${iid}` +
+      `&group_by=institutions.country_code&per-page=1&mailto=${encodeURIComponent(MAILTO)}`;
+    const res = await fetch(url, { next: { revalidate: 86400 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const out: CoCountry[] = (data?.group_by || [])
+      .filter((g: any) => g.key && g.key !== "unknown")
+      .map((g: any) => ({ code: String(g.key).toUpperCase(), name: g.key_display_name || g.key, count: g.count || 0 }));
+    return out.sort((a, b) => b.count - a.count);
+  } catch {
+    return [];
+  }
+}
+
+export type RecentWork = { title: string; year: number | null; venue: string | null; doi: string | null; type: string | null; authors: string };
+
+export async function fetchInstitutionRecentWorks(institutionId: string, n = 6): Promise<RecentWork[]> {
+  const iid = institutionId.replace("https://openalex.org/", "");
+  try {
+    const url = `${OPENALEX_BASE}/works?filter=institutions.id:${iid}` +
+      `&sort=publication_date:desc&per-page=${n}&mailto=${encodeURIComponent(MAILTO)}`;
+    const res = await fetch(url, { next: { revalidate: 21600 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.results || []).map((w: any) => {
+      const auths = (w.authorships || []).slice(0, 3).map((a: any) => a.author?.display_name).filter(Boolean);
+      const more = (w.authorships || []).length > 3 ? " və b." : "";
+      return {
+        title: w.display_name || w.title || "(başlıqsız)",
+        year: w.publication_year || null,
+        venue: w.primary_location?.source?.display_name || null,
+        doi: w.doi || null,
+        type: w.type || null,
+        authors: auths.join(", ") + more,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
