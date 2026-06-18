@@ -1,6 +1,6 @@
 import { getSql, ensureSchema } from "@/lib/db";
 import { ADDA_STRUCTURE, ADDA_ROR, ADDA_ROR_URL } from "@/lib/adda";
-import { fetchInstitutionByRor, fetchInstitutionCoauthorCountries, fetchInstitutionRecentWorks } from "@/lib/openalex";
+import { fetchInstitutionByRor, fetchInstitutionCoauthorCountries, fetchApprovedRecentWorks, type ApprovedAuthors } from "@/lib/openalex";
 import WorldMap from "@/components/WorldMap";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getLocale, getDict } from "@/lib/i18n";
@@ -20,6 +20,33 @@ async function getResearcherCount(): Promise<number> {
   }
 }
 
+const ORCID_RE = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
+
+// Təsdiqlənmiş müəlliflərin identifikatorları (hər müəlliflə bir dənə:
+// əvvəl OpenAlex author ID, o yoxdursa düzgün formatlı ORCID).
+// Yanlış formatlı ORCID-lər (məs. 5 rəqəmli blok) buraya düşmür → OpenAlex süzgəcini pozmur.
+async function getApprovedAuthors(): Promise<ApprovedAuthors> {
+  const ids = new Set<string>();
+  const orcids = new Set<string>();
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT orcid, openalex_id FROM researchers
+      WHERE (status = 'approved' OR status IS NULL)
+    `) as { orcid: string | null; openalex_id: string | null }[];
+    for (const r of rows) {
+      const oid = (r.openalex_id || "").replace(/^https?:\/\/openalex\.org\//i, "").trim().toUpperCase();
+      const orc = (r.orcid || "").replace(/^https?:\/\/orcid\.org\//i, "").trim().toUpperCase();
+      if (/^A\d+$/.test(oid)) ids.add(oid);
+      else if (ORCID_RE.test(orc)) orcids.add(orc);
+    }
+  } catch {
+    // baza əlçatmazsa boş
+  }
+  return { ids: Array.from(ids), orcids: Array.from(orcids) };
+}
+
 function workType(t: string | null): string {
   const m: Record<string, string> = { article: "Məqalə", "book-chapter": "Kitab fəsli", book: "Kitab", "proceedings-article": "Konfrans məqaləsi", preprint: "Preprint", dataset: "Dataset", review: "İcmal", report: "Hesabat" };
   return t ? (m[t] || t) : "";
@@ -29,9 +56,10 @@ export default async function Home() {
   const locale = getLocale();
   const t = getDict(locale);
   const inst = await fetchInstitutionByRor(ADDA_ROR);
+  const approved = await getApprovedAuthors();
   const [countries, recent, researchers] = await Promise.all([
     inst.found && inst.openalexId ? fetchInstitutionCoauthorCountries(inst.openalexId) : Promise.resolve([]),
-    inst.found && inst.openalexId ? fetchInstitutionRecentWorks(inst.openalexId, 6) : Promise.resolve([]),
+    fetchApprovedRecentWorks(approved, 6),
     getResearcherCount(),
   ]);
   const facultyCount = Object.keys(ADDA_STRUCTURE).length;

@@ -327,3 +327,65 @@ export async function fetchInstitutionRecentWorks(institutionId: string, n = 6):
     return [];
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Yalnız təsdiqlənmiş müəlliflərin nəşrləri (ictimai "Son nəşrlər" üçün).
+// Süzgəc SERVER tərəfdə (OpenAlex-də) müəllif identifikatoru üzrə aparılır:
+// nəticədə yalnız təsdiqlənmiş müəlliflərin iştirak etdiyi işlər qayıdır,
+// təsdiqlənməmiş müəlliflərin işləri strukturca daxil ola bilmir.
+// ─────────────────────────────────────────────────────────────────────────────
+export type ApprovedAuthors = { ids: string[]; orcids: string[] };
+
+function chunkArr<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+export async function fetchApprovedRecentWorks(authors: ApprovedAuthors, n = 6): Promise<RecentWork[]> {
+  const ids = Array.from(new Set((authors.ids || []).filter(Boolean)));
+  const orcids = Array.from(new Set((authors.orcids || []).filter(Boolean)));
+  if (ids.length === 0 && orcids.length === 0) return [];
+
+  // OpenAlex OR-süzgəcində dəyər limiti 50-dir → batch-lərə bölürük.
+  const filters: string[] = [];
+  for (const part of chunkArr(ids, 50)) filters.push(`authorships.author.id:${part.join("|")}`);
+  for (const part of chunkArr(orcids, 50)) filters.push(`authorships.author.orcid:${part.join("|")}`);
+
+  const perPage = Math.min(50, Math.max(n, 12));
+  const select = "id,display_name,title,publication_year,publication_date,primary_location,doi,type,authorships";
+
+  const seen = new Map<string, RecentWork & { _date: string }>();
+  try {
+    await Promise.all(filters.map(async (filter) => {
+      const url = `${OPENALEX_BASE}/works?filter=${filter}` +
+        `&sort=publication_date:desc&per-page=${perPage}&select=${select}` +
+        `&mailto=${encodeURIComponent(MAILTO)}`;
+      const res = await fetch(url, { next: { revalidate: 21600 } });
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const w of (data?.results || [])) {
+        const wid = String(w.id || w.doi || w.display_name || "");
+        if (!wid || seen.has(wid)) continue;
+        const auths = (w.authorships || []).slice(0, 3).map((a: any) => a.author?.display_name).filter(Boolean);
+        const more = (w.authorships || []).length > 3 ? " və b." : "";
+        seen.set(wid, {
+          title: w.display_name || w.title || "(başlıqsız)",
+          year: w.publication_year || null,
+          venue: w.primary_location?.source?.display_name || null,
+          doi: w.doi || null,
+          type: w.type || null,
+          authors: auths.join(", ") + more,
+          _date: w.publication_date || (w.publication_year ? `${w.publication_year}-01-01` : "0000-00-00"),
+        });
+      }
+    }));
+  } catch {
+    return [];
+  }
+
+  return Array.from(seen.values())
+    .sort((a, b) => (a._date < b._date ? 1 : a._date > b._date ? -1 : 0))
+    .slice(0, n)
+    .map(({ _date, ...rest }) => rest);
+}
