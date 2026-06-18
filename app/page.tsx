@@ -9,14 +9,27 @@ export const dynamic = "force-dynamic";
 
 const SITE = "https://cris.adda.edu.az";
 
-async function getResearcherCount(): Promise<number> {
+// İctimai statistika: OpenAlex-dən idxal olunmuş tədqiqatçıların (works_count dolu)
+// say + nəşr cəmi + sitat cəmi. İnstitut səviyyəli rəqəmlər deyil, tədqiqatçı cəmləri.
+async function getResearcherStats(): Promise<{ count: number; works: number; citations: number }> {
   try {
     await ensureSchema();
     const sql = getSql();
-    const r = (await sql`SELECT COUNT(*)::int AS n FROM researchers WHERE status = 'approved' OR status IS NULL`) as { n: number }[];
-    return r[0]?.n || 0;
+    const r = (await sql`
+      SELECT
+        COUNT(*)::int                       AS count,
+        COALESCE(SUM(works_count), 0)::bigint AS works,
+        COALESCE(SUM(citations), 0)::bigint   AS citations
+      FROM researchers
+      WHERE works_count IS NOT NULL
+    `) as { count: number; works: number | string; citations: number | string }[];
+    return {
+      count: Number(r[0]?.count || 0),
+      works: Number(r[0]?.works || 0),
+      citations: Number(r[0]?.citations || 0),
+    };
   } catch {
-    return 0;
+    return { count: 0, works: 0, citations: 0 };
   }
 }
 
@@ -57,10 +70,10 @@ export default async function Home() {
   const t = getDict(locale);
   const inst = await fetchInstitutionByRor(ADDA_ROR);
   const approved = await getApprovedAuthors();
-  const [countries, recent, researchers] = await Promise.all([
+  const [countries, recent, stats] = await Promise.all([
     inst.found && inst.openalexId ? fetchInstitutionCoauthorCountries(inst.openalexId) : Promise.resolve([]),
     fetchApprovedRecentWorks(approved, 6),
-    getResearcherCount(),
+    getResearcherStats(),
   ]);
   const facultyCount = Object.keys(ADDA_STRUCTURE).length;
   const countryCount = countries.length;
@@ -106,9 +119,9 @@ export default async function Home() {
         {/* Statistika */}
         <div className="lp-section-head">{t.secStats}</div>
         <div className="lp-stats">
-          <Stat n={researchers} l={t.statResearchers} icon="users" />
-          <Stat n={inst.found ? nf(inst.worksCount) : "—"} l={t.statPubs} icon="doc" />
-          <Stat n={inst.found ? nf(inst.citations) : "—"} l={t.statCitations} icon="quote" gold />
+          <Stat n={nf(stats.count)} l={t.statResearchers} icon="users" />
+          <Stat n={nf(stats.works)} l={t.statPubs} icon="doc" />
+          <Stat n={nf(stats.citations)} l={t.statCitations} icon="quote" gold />
           <Stat n={inst.found ? inst.hIndex : "—"} l={t.statHindex} icon="chart" gold />
           <Stat n={countryCount || "—"} l={t.statCountries} icon="globe" />
           <Stat n={facultyCount} l={t.statFaculties} icon="building" />
