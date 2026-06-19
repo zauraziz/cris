@@ -12,6 +12,7 @@ import RefreshButton from "@/components/RefreshButton";
 import WosRefreshButton from "@/components/WosRefreshButton";
 import AdminManage, { ManageRow } from "@/components/AdminManage";
 import AdminAccounts, { AdminAccount } from "@/components/AdminAccounts";
+import EmailPanel from "@/components/EmailPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -275,6 +276,20 @@ export default async function AdminPage() {
                 Təkrarlanan profilləri birləşdirin (məs. OpenAlex-dən gələn və əl ilə əlavə edilən eyni şəxs) və ya lazımsız profilləri reyestrdən silin.
               </div>
               <AdminManage rows={manageRows} structure={ADDA_STRUCTURE} positions={POSITIONS} />
+            </div>
+          )}
+
+          {isRector && (
+            <div className="harvest-block">
+              <div className="dash-toolbar" style={{ marginTop: 4 }}>
+                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, color: "var(--navy)", fontWeight: 600 }}>
+                  Email bildirişləri
+                </div>
+              </div>
+              <div className="harvest-intro">
+                Korporativ e-poçtu olan tədqiqatçılara avtomatik bildirişlər: hesabın gücləndirilməsi, yeni nəşrlər, ORCID və tədqiqat sahəsi tövsiyələri. Əvvəlcə test göndərib Microsoft 365 inteqrasiyasını yoxlayın.
+              </div>
+              <EmailPanel />
             </div>
           )}
 

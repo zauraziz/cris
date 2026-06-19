@@ -63,6 +63,23 @@ export async function ensureSchema(): Promise<void> {
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS name_en TEXT`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS name_ru TEXT`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS name_tr TEXT`;
+  // Email bildirişləri (Mərhələ B)
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS notified_works_count INTEGER`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS email_opt_out BOOLEAN NOT NULL DEFAULT false`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS email_log (
+      id          SERIAL PRIMARY KEY,
+      researcher_id INTEGER,
+      email       TEXT,
+      kind        TEXT NOT NULL,
+      ref         TEXT NOT NULL DEFAULT '',
+      subject     TEXT,
+      ok          BOOLEAN NOT NULL DEFAULT true,
+      error       TEXT,
+      sent_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS email_log_dedup ON email_log (researcher_id, kind, ref)`;
   // Moderasiya / mənbə (institusional harvest üçün)
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'approved'`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'self'`;
