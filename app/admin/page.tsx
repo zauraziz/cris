@@ -63,9 +63,8 @@ async function getManageRows(): Promise<ManageRow[]> {
     await ensureSchema();
     const sql = getSql();
     const rows = (await sql`
-      SELECT id, full_name, orcid, email, faculty, kafedra, position_title, works_count, citations, source
+      SELECT id, full_name, orcid, email, faculty, kafedra, position_title, works_count, citations, source, status
       FROM researchers
-      WHERE status = 'approved' OR status IS NULL
       ORDER BY full_name
     `) as ManageRow[];
     return rows;
@@ -275,7 +274,7 @@ export default async function AdminPage() {
               <div className="harvest-intro">
                 Təkrarlanan profilləri birləşdirin (məs. OpenAlex-dən gələn və əl ilə əlavə edilən eyni şəxs) və ya lazımsız profilləri reyestrdən silin.
               </div>
-              <AdminManage rows={manageRows} />
+              <AdminManage rows={manageRows} structure={ADDA_STRUCTURE} positions={POSITIONS} />
             </div>
           )}
 

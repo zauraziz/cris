@@ -12,7 +12,7 @@ function isRector(req: NextRequest): boolean {
 type Row = Record<string, any>;
 
 const TEXT_COLS = [
-  "full_name", "email", "orcid", "orcid_name", "openalex_id", "scholar_id",
+  "full_name", "name_en", "name_ru", "name_tr", "email", "orcid", "orcid_name", "openalex_id", "scholar_id",
   "researchgate", "faculty", "kafedra", "position_title", "photo", "bio",
   "research_interests", "linkedin", "website", "source",
 ];
@@ -61,6 +61,9 @@ export async function POST(req: NextRequest) {
     await sql`
       UPDATE researchers SET
         full_name = ${merged.full_name},
+        name_en = ${merged.name_en},
+        name_ru = ${merged.name_ru},
+        name_tr = ${merged.name_tr},
         email = ${merged.email},
         orcid = ${merged.orcid},
         orcid_name = ${merged.orcid_name},

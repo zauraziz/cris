@@ -59,6 +59,10 @@ export async function ensureSchema(): Promise<void> {
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS research_interests TEXT`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS linkedin TEXT`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS website TEXT`;
+  // Çoxdilli ad (full_name = Azərbaycanca baza ad; qalanları opsionaldır)
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS name_en TEXT`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS name_ru TEXT`;
+  await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS name_tr TEXT`;
   // Moderasiya / mənbə (institusional harvest üçün)
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'approved'`;
   await sql`ALTER TABLE researchers ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'self'`;

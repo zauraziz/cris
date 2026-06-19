@@ -2,6 +2,7 @@ import { getSql, ensureSchema } from "@/lib/db";
 import type { Metadata } from "next";
 import { fetchOpenAlexProfile, fetchOpenAlexWorks, type YearCount, type OaWork, type ResearchArea, type Affiliation } from "@/lib/openalex";
 import { fetchOrcidWorks, type OrcidWork } from "@/lib/orcid";
+import { getLocale, localizedName } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,9 @@ const SITE = "https://cris.adda.edu.az";
 
 type DbRow = {
   full_name: string;
+  name_en: string | null;
+  name_ru: string | null;
+  name_tr: string | null;
   faculty: string;
   kafedra: string;
   position_title: string | null;
@@ -36,7 +40,7 @@ async function getResearcher(orcid: string): Promise<DbRow | null> {
     await ensureSchema();
     const sql = getSql();
     const rows = (await sql`
-      SELECT full_name, faculty, kafedra, position_title, orcid, openalex_id,
+      SELECT full_name, name_en, name_ru, name_tr, faculty, kafedra, position_title, orcid, openalex_id,
              scholar_id, researchgate, works_count, citations, h_index, i10_index,
              wos_works, wos_citations, wos_h_index, wos_checked_at,
              photo, bio, research_interests, linkedin, website
@@ -52,14 +56,15 @@ export async function generateMetadata({ params }: { params: { orcid: string } }
   const orcid = decodeURIComponent(params.orcid).toUpperCase();
   const r = await getResearcher(orcid);
   if (!r) return { title: "Tədqiqatçı tapılmadı", robots: { index: false, follow: true } };
+  const dn = localizedName(r, getLocale());
   const role = [r.position_title, r.kafedra].filter(Boolean).join(", ");
-  const desc = `${r.full_name}${role ? " — " + role : ""}, ${r.faculty}. ADDA Elm Portalı: ${r.works_count} nəşr, ${r.citations} istinad, h-indeks ${r.h_index}.`;
+  const desc = `${dn}${role ? " — " + role : ""}, ${r.faculty}. ADDA Elm Portalı: ${r.works_count} nəşr, ${r.citations} istinad, h-indeks ${r.h_index}.`;
   return {
-    title: r.full_name,
+    title: dn,
     description: desc,
     alternates: { canonical: `/r/${orcid}` },
     openGraph: {
-      title: `${r.full_name} — ADDA Elm Portalı`,
+      title: `${dn} — ADDA Elm Portalı`,
       description: desc,
       type: "profile",
       url: `${SITE}/r/${orcid}`,
@@ -119,10 +124,11 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
   const activeYears = years.filter((y) => y.works > 0).length;
   const topField = stats.topics[0]?.name || "—";
 
+  const dn = localizedName(r, getLocale());
   const personLd = {
     "@context": "https://schema.org",
     "@type": "Person",
-    name: r.full_name,
+    name: dn,
     ...(r.position_title ? { jobTitle: r.position_title } : {}),
     affiliation: { "@type": "CollegeOrUniversity", name: "Azərbaycan Dövlət Dəniz Akademiyası", sameAs: "https://ror.org/01znwv148" },
     ...(r.orcid ? { identifier: `https://orcid.org/${r.orcid}` } : {}),
@@ -140,10 +146,10 @@ export default async function ResearcherPage({ params }: { params: { orcid: stri
           {/* Header */}
           <div className="rd-header">
             <div className="rd-avatar">
-              {r.photo ? <img src={r.photo} alt={r.full_name} className="rd-photo" /> : initials(r.full_name)}
+              {r.photo ? <img src={r.photo} alt={dn} className="rd-photo" /> : initials(dn)}
             </div>
             <div className="rd-headinfo">
-              <h1>{r.full_name}</h1>
+              <h1>{dn}</h1>
               <div className="rd-sub">{[r.position_title, r.kafedra, r.faculty].filter(Boolean).join(" · ")}</div>
               <div className="rd-links">
                 {r.orcid && <a href={`https://orcid.org/${r.orcid}`} target="_blank" rel="noreferrer" className="rd-link orcid"><b>ORCID</b> {r.orcid}</a>}

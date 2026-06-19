@@ -1,6 +1,7 @@
 import { getSql, ensureSchema } from "@/lib/db";
 import { ADDA_STRUCTURE } from "@/lib/adda";
 import PublicDirectory, { type DirItem } from "@/components/PublicDirectory";
+import { getLocale, localizedName, type Locale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -9,25 +10,25 @@ export const metadata = {
   description: "Azərbaycan Dövlət Dəniz Akademiyasının tədqiqatçıları — elmmetrik profillər, tədqiqat sahələri və göstəricilər.",
 };
 
-async function getApproved(): Promise<DirItem[]> {
+async function getApproved(locale: Locale): Promise<DirItem[]> {
   try {
     await ensureSchema();
     const sql = getSql();
     const rows = (await sql`
-      SELECT full_name, orcid, faculty, kafedra, position_title,
+      SELECT full_name, name_en, name_ru, name_tr, orcid, faculty, kafedra, position_title,
              works_count, citations, h_index, photo, research_interests
       FROM researchers
       WHERE (status = 'approved' OR status IS NULL)
       ORDER BY citations DESC, works_count DESC
-    `) as DirItem[];
-    return rows;
+    `) as (DirItem & { name_en: string | null; name_ru: string | null; name_tr: string | null })[];
+    return rows.map((r) => ({ ...r, full_name: localizedName(r, locale) }));
   } catch {
     return [];
   }
 }
 
 export default async function ResearchersPage() {
-  const items = await getApproved();
+  const items = await getApproved(getLocale());
   const totalPubs = items.reduce((s, r) => s + (r.works_count || 0), 0);
   const totalCit = items.reduce((s, r) => s + (r.citations || 0), 0);
   const faculties = Object.keys(ADDA_STRUCTURE);

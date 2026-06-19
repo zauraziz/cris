@@ -147,6 +147,21 @@ export function getLocale(): Locale {
   return c && (LOCALES as readonly string[]).includes(c) ? c : DEFAULT_LOCALE;
 }
 
+// Tədqiqatçının cari dilə uyğun adı. Dil üçün ad yoxdursa Azərbaycanca bazaya (full_name) keçir.
+export function localizedName(
+  r: { full_name: string; name_en?: string | null; name_ru?: string | null; name_tr?: string | null },
+  locale: Locale
+): string {
+  const byLocale: Record<Locale, string | null | undefined> = {
+    az: r.full_name,
+    en: r.name_en,
+    ru: r.name_ru,
+    tr: r.name_tr,
+  };
+  const v = byLocale[locale];
+  return v && v.trim() ? v.trim() : r.full_name;
+}
+
 export function getDict(locale: Locale): Dict {
   return DICT[locale] || DICT[DEFAULT_LOCALE];
 }
